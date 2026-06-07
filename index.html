@@ -166,6 +166,15 @@
     .member-item input { accent-color: var(--safe); width: 13px; height: 13px; flex-shrink: 0; }
     .member-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; }
 
+    .task-editor { padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+    .task-editor-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    .task-editor-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text); padding: 4px 6px; border-radius: 6px; }
+    .task-editor-item:hover { background: var(--border); }
+    .task-editor-label { flex: 1; }
+    .task-editor-del { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px; }
+    .task-editor-del:hover { color: var(--danger); }
+    .task-add-row { display: flex; gap: 6px; }
+
     .badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
     .b-eq    { background: rgba(78,205,196,0.15); color: #4ecdc4; }
     .b-fire  { background: rgba(255,107,53,0.15); color: #ff6b35; }
@@ -176,6 +185,12 @@
 
     .share-row { display: flex; gap: 8px; justify-content: flex-end; padding: 0 24px 24px; max-width: 1200px; margin: 0 auto; }
     .hidden { display: none !important; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in { animation: fadeIn 0.35s ease both; }
 
     .leaflet-popup-content-wrapper { background: var(--surface2) !important; color: var(--text) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
     .leaflet-popup-tip { background: var(--surface2) !important; }
@@ -295,6 +310,14 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">👨‍👩‍👧 Household Tracker</span>
+        <button class="btn btn-secondary" id="editTasksBtn" style="padding:4px 10px; font-size:0.75rem;" onclick="toggleTaskEditor()">✏️ Edit Tasks</button>
+      </div>
+      <div id="taskEditor" class="task-editor hidden">
+        <div class="task-editor-list" id="taskEditorList"></div>
+        <div class="task-add-row">
+          <input type="text" id="taskInput" class="tracker-input" placeholder="New task…" maxlength="50" style="padding:5px 10px; font-size:0.8rem;"/>
+          <button class="btn btn-secondary" style="padding:5px 10px; font-size:0.8rem;" onclick="addTask()">+ Add</button>
+        </div>
       </div>
       <div class="card-body">
         <div class="tracker-controls">

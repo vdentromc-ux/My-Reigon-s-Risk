@@ -57,9 +57,35 @@ function showState(which) {
 }
 
 function backToMenu() {
-  showState('empty');
-  document.getElementById('locationPill').classList.add('hidden');
-  document.getElementById('cityInput').value = '';
+  const fadeTargets = ['mainContent', 'shareRow'].map(id => document.getElementById(id)).filter(el => !el.classList.contains('hidden'));
+  let pending = fadeTargets.length;
+
+  function finish() {
+    showState('empty');
+    document.getElementById('locationPill').classList.add('hidden');
+    document.getElementById('cityInput').value = '';
+    const empty = document.getElementById('emptyState');
+    const search = document.querySelector('.search-section');
+    empty.classList.add('fade-in');
+    search.classList.add('fade-in');
+    empty.addEventListener('animationend', () => empty.classList.remove('fade-in'), { once: true });
+    search.addEventListener('animationend', () => search.classList.remove('fade-in'), { once: true });
+  }
+
+  if (!pending) { finish(); return; }
+
+  fadeTargets.forEach(el => {
+    el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(8px)';
+    el.addEventListener('transitionend', function handler() {
+      el.removeEventListener('transitionend', handler);
+      el.style.transition = '';
+      el.style.opacity = '';
+      el.style.transform = '';
+      if (--pending === 0) finish();
+    });
+  });
 }
 
 function showError(title, msg) {
@@ -554,13 +580,15 @@ function togglePlay() {
 }
 
 // ── Household Tracker ─────────────────────────────────────────────────────────
-const MEMBER_ITEMS = ['Go-bag packed', 'Emergency contacts memorized', 'Evacuation route reviewed', 'Phone + charger ready'];
+const DEFAULT_TASKS = ['Go-bag packed', 'Emergency contacts memorized', 'Evacuation route reviewed', 'Phone + charger ready'];
+let memberItems = JSON.parse(localStorage.getItem('mrr_tasks') || 'null') || DEFAULT_TASKS.slice();
 
-function memberItemKey(name, i) { return `mrr_mi_${name}_${i}`; }
+function memberItemKey(name, label) { return `mrr_mi_${name}::${label}`; }
 
 function getMemberPct(name) {
-  const checked = MEMBER_ITEMS.filter((_, i) => localStorage.getItem(memberItemKey(name, i)) === '1').length;
-  return Math.round(checked / MEMBER_ITEMS.length * 100);
+  if (!memberItems.length) return 0;
+  const checked = memberItems.filter(label => localStorage.getItem(memberItemKey(name, label)) === '1').length;
+  return Math.round(checked / memberItems.length * 100);
 }
 
 function renderTracker() {
@@ -571,11 +599,12 @@ function renderTracker() {
   }
   grid.innerHTML = members.map(name => {
     const pct = getMemberPct(name);
-    const items = MEMBER_ITEMS.map((label, i) => {
-      const key = memberItemKey(name, i);
+    const items = memberItems.map(label => {
+      const key = memberItemKey(name, label);
       const ck = localStorage.getItem(key) === '1';
+      const safeLabel = label.replace(/'/g, "\\'");
       return `<label class="member-item">
-        <input type="checkbox" ${ck ? 'checked' : ''} onchange="toggleMemberItem('${name}',${i},this)"/>
+        <input type="checkbox" ${ck ? 'checked' : ''} onchange="toggleMemberItem('${name.replace(/'/g,"\\'")}','${safeLabel}',this)"/>
         ${label}
       </label>`;
     }).join('');
@@ -583,7 +612,7 @@ function renderTracker() {
       <div class="tracker-name-row">
         <span>${name}</span>
         <span class="tracker-pct">${pct}%</span>
-        <button class="member-remove" onclick="removeMember('${name}')">×</button>
+        <button class="member-remove" onclick="removeMember('${name.replace(/'/g,"\\'")}')">×</button>
       </div>
       <div class="tracker-bar-bg"><div class="tracker-bar-fill" style="width:${pct}%"></div></div>
       <div class="member-items">${items}</div>
@@ -591,8 +620,49 @@ function renderTracker() {
   }).join('');
 }
 
-function toggleMemberItem(name, i, cb) {
-  localStorage.setItem(memberItemKey(name, i), cb.checked ? '1' : '0');
+function renderTaskEditor() {
+  const list = document.getElementById('taskEditorList');
+  if (!memberItems.length) {
+    list.innerHTML = '<div style="font-size:0.78rem; color:var(--text-dim); padding:2px 4px;">No tasks yet.</div>';
+    return;
+  }
+  list.innerHTML = memberItems.map((label, i) => {
+    const safe = label.replace(/'/g, "\\'");
+    return `<div class="task-editor-item">
+      <span class="task-editor-label">${label}</span>
+      <button class="task-editor-del" onclick="removeTask(${i})" title="Remove task">×</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleTaskEditor() {
+  const editor = document.getElementById('taskEditor');
+  const btn = document.getElementById('editTasksBtn');
+  const hidden = editor.classList.toggle('hidden');
+  btn.textContent = hidden ? '✏️ Edit Tasks' : '✕ Done';
+  if (!hidden) renderTaskEditor();
+}
+
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const label = input.value.trim();
+  if (!label || memberItems.includes(label)) return;
+  memberItems.push(label);
+  localStorage.setItem('mrr_tasks', JSON.stringify(memberItems));
+  input.value = '';
+  renderTaskEditor();
+  renderTracker();
+}
+
+function removeTask(i) {
+  memberItems.splice(i, 1);
+  localStorage.setItem('mrr_tasks', JSON.stringify(memberItems));
+  renderTaskEditor();
+  renderTracker();
+}
+
+function toggleMemberItem(name, label, cb) {
+  localStorage.setItem(memberItemKey(name, label), cb.checked ? '1' : '0');
   const pct = getMemberPct(name);
   for (const card of document.querySelectorAll('.tracker-card')) {
     if (card.querySelector('.tracker-name-row span')?.textContent === name) {
@@ -803,6 +873,7 @@ function saveReport() {
 // ── Init ───────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   document.getElementById('memberInput').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
+  document.getElementById('taskInput').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
   const yrInput = document.getElementById('yrInput');
   const commitYrInput = () => {
