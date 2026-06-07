@@ -3,7 +3,13 @@
     "allow": [
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(gh repo *)",
+      "Bash(curl -s \"https://api.github.com/users/vdentromc-ux/repos\")",
+      "Bash(python -c \"import sys,json; [print\\(r['name']\\) for r in json.load\\(sys.stdin\\)]\")",
+      "Bash(findstr \"full_name\")",
+      "Bash(curl -s \"https://api.github.com/users/dentrro/repos\")",
+      "Bash(git remote *)"
     ]
   }
 }
