@@ -581,14 +581,34 @@ function togglePlay() {
 
 // ── Household Tracker ─────────────────────────────────────────────────────────
 const DEFAULT_TASKS = ['Go-bag packed', 'Emergency contacts memorized', 'Evacuation route reviewed', 'Phone + charger ready'];
-let memberItems = JSON.parse(localStorage.getItem('mrr_tasks') || 'null') || DEFAULT_TASKS.slice();
+let openEditorMember = null;
 
 function memberItemKey(name, label) { return `mrr_mi_${name}::${label}`; }
+function getMemberTasks(name) { return JSON.parse(localStorage.getItem('mrr_tasks_' + name) || 'null') || DEFAULT_TASKS.slice(); }
+function saveMemberTasks(name, tasks) { localStorage.setItem('mrr_tasks_' + name, JSON.stringify(tasks)); }
 
 function getMemberPct(name) {
-  if (!memberItems.length) return 0;
-  const checked = memberItems.filter(label => localStorage.getItem(memberItemKey(name, label)) === '1').length;
-  return Math.round(checked / memberItems.length * 100);
+  const tasks = getMemberTasks(name);
+  if (!tasks.length) return 0;
+  const checked = tasks.filter(label => localStorage.getItem(memberItemKey(name, label)) === '1').length;
+  return Math.round(checked / tasks.length * 100);
+}
+
+function renderMemberTaskEditor(name, tasks) {
+  const safe = name.replace(/'/g, "\\'");
+  const taskRows = tasks.length
+    ? tasks.map((t, i) => `<div class="task-editor-item">
+        <span class="task-editor-label">${t}</span>
+        <button class="task-editor-del" onclick="removeMemberTask('${safe}',${i})">×</button>
+      </div>`).join('')
+    : '<div style="font-size:0.73rem;color:var(--text-dim);padding:2px 4px;">No tasks yet.</div>';
+  return `<div class="member-task-editor-panel">
+    <div class="task-editor-list">${taskRows}</div>
+    <div class="task-add-row" style="margin-top:6px;">
+      <input type="text" class="tracker-input member-task-input" data-member="${name}" placeholder="New task…" maxlength="50" style="padding:4px 8px;font-size:0.75rem;" onkeydown="if(event.key==='Enter')addMemberTask('${safe}')"/>
+      <button class="btn btn-secondary" style="padding:4px 8px;font-size:0.75rem;" onclick="addMemberTask('${safe}')">+ Add</button>
+    </div>
+  </div>`;
 }
 
 function renderTracker() {
@@ -598,66 +618,56 @@ function renderTracker() {
     return;
   }
   grid.innerHTML = members.map(name => {
+    const tasks = getMemberTasks(name);
     const pct = getMemberPct(name);
-    const items = memberItems.map(label => {
-      const key = memberItemKey(name, label);
-      const ck = localStorage.getItem(key) === '1';
-      const safeLabel = label.replace(/'/g, "\\'");
-      return `<label class="member-item">
-        <input type="checkbox" ${ck ? 'checked' : ''} onchange="toggleMemberItem('${name.replace(/'/g,"\\'")}','${safeLabel}',this)"/>
-        ${label}
-      </label>`;
-    }).join('');
+    const safe = name.replace(/'/g, "\\'");
+    const isEditing = openEditorMember === name;
+    const editorHtml = isEditing ? renderMemberTaskEditor(name, tasks) : '';
+    const items = tasks.length
+      ? tasks.map(label => {
+          const ck = localStorage.getItem(memberItemKey(name, label)) === '1';
+          const safeLabel = label.replace(/'/g, "\\'");
+          return `<label class="member-item">
+            <input type="checkbox" ${ck ? 'checked' : ''} onchange="toggleMemberItem('${safe}','${safeLabel}',this)"/>
+            ${label}
+          </label>`;
+        }).join('')
+      : '<div style="font-size:0.73rem;color:var(--text-dim);">No tasks. Click ✏️ to add some.</div>';
     return `<div class="tracker-card">
       <div class="tracker-name-row">
         <span>${name}</span>
         <span class="tracker-pct">${pct}%</span>
-        <button class="member-remove" onclick="removeMember('${name.replace(/'/g,"\\'")}')">×</button>
+        <button class="member-edit-tasks${isEditing ? ' active' : ''}" title="Edit tasks" onclick="toggleMemberTaskEditor('${safe}')">✏️</button>
+        <button class="member-remove" onclick="removeMember('${safe}')">×</button>
       </div>
+      ${editorHtml}
       <div class="tracker-bar-bg"><div class="tracker-bar-fill" style="width:${pct}%"></div></div>
       <div class="member-items">${items}</div>
     </div>`;
   }).join('');
 }
 
-function renderTaskEditor() {
-  const list = document.getElementById('taskEditorList');
-  if (!memberItems.length) {
-    list.innerHTML = '<div style="font-size:0.78rem; color:var(--text-dim); padding:2px 4px;">No tasks yet.</div>';
-    return;
-  }
-  list.innerHTML = memberItems.map((label, i) => {
-    const safe = label.replace(/'/g, "\\'");
-    return `<div class="task-editor-item">
-      <span class="task-editor-label">${label}</span>
-      <button class="task-editor-del" onclick="removeTask(${i})" title="Remove task">×</button>
-    </div>`;
-  }).join('');
-}
-
-function toggleTaskEditor() {
-  const editor = document.getElementById('taskEditor');
-  const btn = document.getElementById('editTasksBtn');
-  const hidden = editor.classList.toggle('hidden');
-  btn.textContent = hidden ? '✏️ Edit Tasks' : '✕ Done';
-  if (!hidden) renderTaskEditor();
-}
-
-function addTask() {
-  const input = document.getElementById('taskInput');
-  const label = input.value.trim();
-  if (!label || memberItems.includes(label)) return;
-  memberItems.push(label);
-  localStorage.setItem('mrr_tasks', JSON.stringify(memberItems));
-  input.value = '';
-  renderTaskEditor();
+function toggleMemberTaskEditor(name) {
+  openEditorMember = openEditorMember === name ? null : name;
   renderTracker();
 }
 
-function removeTask(i) {
-  memberItems.splice(i, 1);
-  localStorage.setItem('mrr_tasks', JSON.stringify(memberItems));
-  renderTaskEditor();
+function addMemberTask(name) {
+  const input = document.querySelector(`.member-task-input[data-member="${name}"]`);
+  if (!input) return;
+  const label = input.value.trim();
+  if (!label) return;
+  const tasks = getMemberTasks(name);
+  if (tasks.includes(label)) return;
+  tasks.push(label);
+  saveMemberTasks(name, tasks);
+  renderTracker();
+}
+
+function removeMemberTask(name, i) {
+  const tasks = getMemberTasks(name);
+  tasks.splice(i, 1);
+  saveMemberTasks(name, tasks);
   renderTracker();
 }
 
@@ -679,6 +689,9 @@ function addMember() {
   if (!name || members.includes(name)) return;
   members.push(name);
   localStorage.setItem('mrr_members', JSON.stringify(members));
+  if (!localStorage.getItem('mrr_tasks_' + name)) {
+    saveMemberTasks(name, DEFAULT_TASKS.slice());
+  }
   input.value = '';
   renderTracker();
 }
@@ -686,6 +699,8 @@ function addMember() {
 function removeMember(name) {
   members = members.filter(m => m !== name);
   localStorage.setItem('mrr_members', JSON.stringify(members));
+  localStorage.removeItem('mrr_tasks_' + name);
+  if (openEditorMember === name) openEditorMember = null;
   renderTracker();
 }
 
@@ -873,7 +888,6 @@ function saveReport() {
 // ── Init ───────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   document.getElementById('memberInput').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
-  document.getElementById('taskInput').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
 
   const yrInput = document.getElementById('yrInput');
   const commitYrInput = () => {
