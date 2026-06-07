@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Region's Risk</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #242736;
+      --border: #2e3347;
+      --text: #e8eaf0;
+      --text-dim: #8892a4;
+      --accent: #ff6b35;
+      --warning: #ffd166;
+      --danger: #ef476f;
+      --safe: #06d6a0;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    header { background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%); border-bottom: 1px solid var(--border); padding: 18px 24px; display: flex; align-items: center; gap: 12px; }
+    header .logo { font-size: 1.5rem; }
+    header h1 { font-size: 1.35rem; font-weight: 700; background: linear-gradient(135deg, #ff6b35, #ffd166); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    header p { font-size: 0.78rem; color: var(--text-dim); margin-top: 2px; }
+
+    .search-section { padding: 28px 24px 0; max-width: 800px; margin: 0 auto; }
+    .search-section label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+    .search-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 16px; color: var(--text); font-size: 1rem; outline: none; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-dim); }
+    .search-input-wrap { flex: 1; min-width: 200px; position: relative; }
+    .suggestions-drop { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); max-height: 260px; overflow-y: auto; overflow-x: hidden; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.45); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .suggestions-drop::-webkit-scrollbar { width: 5px; }
+    .suggestions-drop::-webkit-scrollbar-track { background: transparent; }
+    .suggestions-drop::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .suggestion-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; font-size: 0.88rem; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover, .suggestion-item.active { background: var(--surface); }
+    .suggestion-item:hover .sug-icon, .suggestion-item.active .sug-icon { color: var(--accent); }
+    .sug-icon { font-size: 0.85rem; flex-shrink: 0; color: var(--text-dim); }
+    .sug-main { font-weight: 600; color: var(--text); }
+    .sug-sub { font-size: 0.74rem; color: var(--text-dim); margin-top: 1px; }
+    .yr-control { display: flex; align-items: center; gap: 5px; }
+    .yr-input { width: 44px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; color: var(--text); font-size: 0.78rem; font-weight: 700; text-align: center; outline: none; transition: border-color 0.15s; -moz-appearance: textfield; appearance: textfield; }
+    .yr-input::-webkit-outer-spin-button, .yr-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .yr-input:focus { border-color: var(--accent); }
+    .yr-unit { font-size: 0.72rem; color: var(--text-dim); }
+    .yr-presets { display: flex; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; margin-left: 2px; }
+    .yr-btn { background: none; border: none; color: var(--text-dim); font-size: 0.72rem; font-weight: 600; padding: 3px 7px; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+    .yr-btn:hover { color: var(--text); background: var(--border); }
+    .yr-btn.active { background: var(--accent); color: #fff; }
+    #yrControl:not([data-loaded]) { opacity: 0.4; pointer-events: none; }
+    .btn { padding: 11px 18px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: all 0.15s; white-space: nowrap; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #ff8c5a; transform: translateY(-1px); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--surface2); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    #locationPill { max-width: 800px; margin: 10px auto 0; padding: 0 24px; }
+    .pill-inner { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px 4px 8px; font-size: 0.78rem; color: var(--text-dim); }
+
+    .state-container { max-width: 600px; margin: 60px auto; padding: 0 24px; text-align: center; }
+    .state-icon { font-size: 3rem; margin-bottom: 16px; }
+    .state-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 8px; }
+    .state-msg { color: var(--text-dim); font-size: 0.88rem; line-height: 1.6; }
+    .spinner { display: inline-block; width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .main-content { max-width: 1200px; margin: 0 auto; padding: 20px 24px; display: grid; grid-template-columns: 1fr 360px; gap: 20px; }
+    @media (max-width: 900px) { .main-content { grid-template-columns: 1fr; } }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .card-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim); display: flex; align-items: center; gap: 7px; }
+    .card-body { padding: 18px; }
+
+    .full-col { grid-column: 1 / -1; }
+
+    .alerts-banner { background: rgba(239,71,111,0.1); border: 1px solid rgba(239,71,111,0.25); border-radius: var(--radius); padding: 12px 16px; display: flex; gap: 10px; font-size: 0.83rem; }
+    .alert-entry { margin-bottom: 6px; }
+    .alert-entry:last-child { margin-bottom: 0; }
+    .alert-headline { font-weight: 600; color: var(--danger); }
+    .alert-area { color: var(--text-dim); font-size: 0.75rem; }
+
+    #map { height: 400px; width: 100%; }
+
+    .time-slider-section { padding: 14px 18px; border-top: 1px solid var(--border); }
+    .time-label-row { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 5px; }
+    .time-slider { width: 100%; accent-color: var(--accent); cursor: pointer; }
+    .time-display { text-align: center; font-size: 0.9rem; font-weight: 700; color: var(--accent); margin-top: 5px; }
+    .time-play-btn { display: block; margin: 8px auto 0; padding: 5px 14px; font-size: 0.78rem; }
+
+    .stats-row { display: flex; border-top: 1px solid var(--border); }
+    .stat { flex: 1; text-align: center; padding: 12px 6px; }
+    .stat + .stat { border-left: 1px solid var(--border); }
+    .stat-num { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.65rem; color: var(--text-dim); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .risk-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .risk-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .risk-rank { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
+    .rank-1 { background: rgba(239,71,111,0.18); color: #ef476f; }
+    .rank-2 { background: rgba(255,209,102,0.18); color: #ffd166; }
+    .rank-3 { background: rgba(78,205,196,0.18); color: #4ecdc4; }
+    .risk-info { flex: 1; }
+    .risk-name { font-weight: 600; font-size: 0.92rem; }
+    .risk-desc { font-size: 0.74rem; color: var(--text-dim); margin-top: 2px; }
+    .risk-bar-wrap { width: 72px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+    .risk-bar { height: 100%; border-radius: 3px; }
+
+    .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .checklist-group { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .checklist-group-head { display: flex; align-items: center; gap: 6px; font-size: 0.83rem; font-weight: 700; margin-bottom: 6px; }
+    .conf-badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; font-weight: 600; margin-left: auto; flex-shrink: 0; }
+    .conf-high { background: rgba(6,214,160,0.12); color: var(--safe); }
+    .conf-med  { background: rgba(255,209,102,0.12); color: var(--warning); }
+    .conf-low  { background: rgba(239,71,111,0.12); color: var(--danger); }
+    .checklist-reason { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px; }
+    .checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(46,51,71,0.5); }
+    .checklist-item:last-child { border-bottom: none; }
+    .kit-cb { width: 16px; height: 16px; accent-color: var(--safe); cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+    .cb-label { font-size: 0.82rem; line-height: 1.4; cursor: pointer; transition: color 0.15s; }
+    .cb-label.done { text-decoration: line-through; color: var(--text-dim); }
+
+    .tracker-controls { display: flex; gap: 8px; margin-bottom: 12px; }
+    .tracker-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-size: 0.83rem; outline: none; }
+    .tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+    .tracker-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .tracker-name-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.83rem; font-weight: 600; margin-bottom: 4px; }
+    .tracker-pct { color: var(--safe); font-size: 0.75rem; }
+    .tracker-bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
+    .tracker-bar-fill { height: 100%; background: var(--safe); border-radius: 2px; transition: width 0.3s; }
+    .member-items { display: flex; flex-direction: column; gap: 4px; }
+    .member-item { display: flex; align-items: center; gap: 6px; font-size: 0.73rem; color: var(--text-dim); }
+    .member-item input { accent-color: var(--safe); width: 13px; height: 13px; flex-shrink: 0; }
+    .member-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; }
+
+    .badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+    .b-eq    { background: rgba(78,205,196,0.15); color: #4ecdc4; }
+    .b-fire  { background: rgba(255,107,53,0.15); color: #ff6b35; }
+    .b-flood { background: rgba(100,149,237,0.15); color: #6495ed; }
+    .b-vol   { background: rgba(239,71,111,0.15); color: #ef476f; }
+    .b-storm { background: rgba(255,209,102,0.15); color: #ffd166; }
+    .b-other { background: rgba(136,146,164,0.15); color: #8892a4; }
+
+    .share-row { display: flex; gap: 8px; justify-content: flex-end; padding: 0 24px 24px; max-width: 1200px; margin: 0 auto; }
+    .hidden { display: none !important; }
+
+    .leaflet-popup-content-wrapper { background: #242736 !important; color: #e8eaf0 !important; border: 1px solid #2e3347 !important; border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
+    .leaflet-popup-tip { background: #242736 !important; }
+    .leaflet-popup-content { margin: 10px 14px !important; }
+    .popup-title { font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+    .popup-detail { font-size: 0.76rem; color: #8892a4; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🗺️</span>
+  <div>
+    <h1>My Region's Risk</h1>
+    <p>Real-time disaster awareness &amp; preparedness checklist</p>
+  </div>
+</header>
+
+<div class="search-section">
+  <label for="cityInput">Search your region</label>
+  <div class="search-row">
+    <div class="search-input-wrap">
+      <input type="text" id="cityInput" class="search-input" placeholder="City, state, or zip code…" autocomplete="off"/>
+      <div id="suggestionsDrop" class="suggestions-drop hidden"></div>
+    </div>
+    <button class="btn btn-primary" id="searchBtn" onclick="handleSearch()">Search</button>
+    <button class="btn btn-secondary" id="geoBtn" onclick="handleGeolocate()">📍 Use My Location</button>
+  </div>
+</div>
+
+<div id="locationPill" class="hidden">
+  <span class="pill-inner">
+    <span>📍</span>
+    <span id="pillName"></span>
+    <span id="pillCoords" style="font-size:0.7rem; opacity:0.6;"></span>
+  </span>
+</div>
+
+<!-- States -->
+<div id="emptyState" class="state-container">
+  <div class="state-icon">🌍</div>
+  <div class="state-title">Search your region to get started</div>
+  <div class="state-msg">Enter a city or use your location to see recent disaster events,<br>a risk analysis, and a personalized preparedness checklist.</div>
+</div>
+
+<div id="loadingState" class="state-container hidden">
+  <div class="spinner"></div>
+  <div class="state-title">Fetching regional data…</div>
+  <div class="state-msg">Querying USGS earthquakes, NASA EONET natural events,<br>and NWS active weather alerts</div>
+</div>
+
+<div id="errorState" class="state-container hidden">
+  <div class="state-icon">⚠️</div>
+  <div class="state-title" id="errTitle">Something went wrong</div>
+  <div class="state-msg" id="errMsg">Please try again.</div>
+</div>
+
+<!-- Main content -->
+<div id="mainContent" class="main-content hidden">
+
+  <!-- Active alerts banner (full width) -->
+  <div id="alertsBanner" class="full-col hidden">
+    <div class="alerts-banner">
+      <span style="font-size:1.1rem; flex-shrink:0; margin-top:1px;">🚨</span>
+      <div id="alertsBody"></div>
+    </div>
+  </div>
+
+  <!-- Left: Map card -->
+  <div class="card" style="grid-row: span 2;">
+    <div class="card-header">
+      <span class="card-title">🗺️ Event Map <span id="mapCount" style="font-weight:400; color:var(--text-dim);"></span></span>
+      <div id="mapLegend" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
+    </div>
+    <div id="map"></div>
+    <div class="time-slider-section">
+      <div class="time-label-row">
+        <span>⏱ Time Machine</span>
+        <span id="sliderRange"></span>
+      </div>
+      <input type="range" class="time-slider" id="timeSlider" min="0" max="5" value="5"/>
+      <div class="time-display" id="timeDisplay">All Years</div>
+      <button class="btn btn-secondary time-play-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><div class="stat-num" id="statEq">—</div><div class="stat-label">Quakes</div></div>
+      <div class="stat"><div class="stat-num" id="statFire">—</div><div class="stat-label">Wildfires</div></div>
+      <div class="stat"><div class="stat-num" id="statFlood">—</div><div class="stat-label">Floods</div></div>
+      <div class="stat"><div class="stat-num" id="statAlerts">—</div><div class="stat-label">Alerts</div></div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex; flex-direction:column; gap:18px;">
+
+    <!-- Top-3 Risks -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⚠️ Top Regional Risks</span>
+        <div class="yr-control" id="yrControl">
+          <input type="number" id="yrInput" class="yr-input" min="1" max="20" value="5"/>
+          <span class="yr-unit">yr</span>
+          <div class="yr-presets">
+            <button class="yr-btn" data-yr="1" onclick="applyYears(1)">1</button>
+            <button class="yr-btn" data-yr="3" onclick="applyYears(3)">3</button>
+            <button class="yr-btn active" data-yr="5" onclick="applyYears(5)">5</button>
+            <button class="yr-btn" data-yr="10" onclick="applyYears(10)">10</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body" id="risksBody"></div>
+    </div>
+
+    <!-- Household tracker -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">👨‍👩‍👧 Household Tracker</span>
+      </div>
+      <div class="card-body">
+        <div class="tracker-controls">
+          <input type="text" id="memberInput" class="tracker-input" placeholder="Add member name…" maxlength="30"/>
+          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" onclick="addMember()">+ Add</button>
+        </div>
+        <div id="trackerGrid" class="tracker-grid"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Full-width checklist -->
+  <div class="card full-col">
+    <div class="card-header">
+      <span class="card-title">✅ Preparedness Checklist</span>
+      <span style="font-size:0.72rem; color:var(--text-dim);">Tailored to your regional risks · check items off as you build your kit</span>
+    </div>
+    <div class="card-body">
+      <div id="checklistGrid" class="checklist-grid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Share / Save row -->
+<div id="shareRow" class="share-row hidden">
+  <button class="btn btn-secondary" id="shareBtn" onclick="shareResults()">🔗 Share</button>
+  <button class="btn btn-primary" onclick="saveReport()">💾 Save Report</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
