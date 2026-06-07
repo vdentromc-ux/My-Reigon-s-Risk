@@ -49,9 +49,17 @@ function showState(which) {
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('shareRow').classList.remove('hidden');
+    document.getElementById('backBtn').classList.remove('hidden');
   } else {
     document.getElementById(which + 'State').classList.remove('hidden');
+    document.getElementById('backBtn').classList.add('hidden');
   }
+}
+
+function backToMenu() {
+  showState('empty');
+  document.getElementById('locationPill').classList.add('hidden');
+  document.getElementById('cityInput').value = '';
 }
 
 function showError(title, msg) {
