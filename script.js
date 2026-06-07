@@ -1,6 +1,22 @@
 // My Region's Risk — script.js
 // APIs: Nominatim (geocoding), USGS (earthquakes), NASA EONET (fires/floods/etc), NWS (alerts)
 
+// ── Theme ─────────────────────────────────────────────────────────────────────
+(function () {
+  if (localStorage.getItem('mrr_theme') === 'light') {
+    document.documentElement.classList.add('light');
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('themeToggle').textContent = '🌙 Dark';
+    });
+  }
+})();
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('mrr_theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+}
+
 const RADIUS_KM = 400;
 const YEARS_BACK = 5;   // fetch window — never changes
 const R_EARTH = 6371;
@@ -409,11 +425,29 @@ function renderChecklist(risks) {
       ${items}
     </div>`;
   }).join('');
+  updateChecklistProgress();
+}
+
+function updateChecklistProgress() {
+  const all = document.querySelectorAll('#checklistGrid .kit-cb');
+  const checkedCount = document.querySelectorAll('#checklistGrid .kit-cb:checked').length;
+  if (!all.length) return;
+  const pct = Math.round(checkedCount / all.length * 100);
+  document.getElementById('ckPct').textContent = pct + '%';
+  document.getElementById('ckBar').style.width = pct + '%';
 }
 
 function toggleItem(cb) {
   localStorage.setItem(cb.dataset.key, cb.checked ? '1' : '0');
   cb.nextElementSibling.classList.toggle('done', cb.checked);
+  if (cb.checked) {
+    const item = cb.parentElement;
+    item.classList.remove('ck-pop');
+    void item.offsetWidth;
+    item.classList.add('ck-pop');
+    item.addEventListener('animationend', () => item.classList.remove('ck-pop'), { once: true });
+  }
+  updateChecklistProgress();
   renderTracker();
 }
 
@@ -551,7 +585,14 @@ function renderTracker() {
 
 function toggleMemberItem(name, i, cb) {
   localStorage.setItem(memberItemKey(name, i), cb.checked ? '1' : '0');
-  renderTracker();
+  const pct = getMemberPct(name);
+  for (const card of document.querySelectorAll('.tracker-card')) {
+    if (card.querySelector('.tracker-name-row span')?.textContent === name) {
+      card.querySelector('.tracker-pct').textContent = pct + '%';
+      card.querySelector('.tracker-bar-fill').style.width = pct + '%';
+      break;
+    }
+  }
 }
 
 function addMember() {
