@@ -1,6 +1,19 @@
 // My Region's Risk — script.js
 // APIs: Nominatim (geocoding), USGS (earthquakes), NASA EONET (fires/floods/etc), NWS (alerts)
 
+// Live family sync uses Y.js + WebRTC — no account or setup needed.
+
+function pctColor(pct) {
+  const hue = Math.round(pct * 1.2); // 0 → red (hsl 0), 100 → yellow-green (hsl 120)
+  return `hsl(${hue}, 78%, 50%)`;
+}
+
+function setBar(el, pct) {
+  if (!el) return;
+  el.style.width = pct + '%';
+  el.style.backgroundColor = pctColor(pct);
+}
+
 // ── Theme ─────────────────────────────────────────────────────────────────────
 (function () {
   if (localStorage.getItem('mrr_theme') === 'light') {
@@ -29,7 +42,7 @@ let sliderYears = [];
 let playInterval = null;
 let currentLocation = null;
 let currentRisks = [];
-let members = JSON.parse(localStorage.getItem('mrr_members') || '[]');
+let families = JSON.parse(localStorage.getItem('mrr_families') || '[]');
 let analysisYears = 5;
 let cachedYears = 5;
 let storedEarthquakes = [], storedNaturalEvents = [], storedAlerts = [];
@@ -417,18 +430,20 @@ function renderAlerts(alerts) {
 // ── Render: Risks ──────────────────────────────────────────────────────────────
 function renderRisks(risks) {
   currentRisks = risks;
-  const rankColors = { 1: '#ef476f', 2: '#ffd166', 3: '#4ecdc4' };
-  document.getElementById('risksBody').innerHTML = risks.map(r => `
+  document.getElementById('risksBody').innerHTML = risks.map(r => {
+    const color = EVENT_COLORS[r.type] || '#8892a4';
+    return `
     <div class="risk-item">
-      <div class="risk-rank rank-${r.rank}">${r.rank}</div>
+      <div class="risk-rank" style="background:${color}22; color:${color}">${r.rank}</div>
       <div class="risk-info">
-        <div class="risk-name">${r.icon} ${r.name}</div>
+        <div class="risk-name" style="color:${color}">${r.icon} ${r.name}</div>
         <div class="risk-desc">${r.score} weighted event${r.score !== 1 ? 's' : ''} · ${analysisYears}-yr window</div>
       </div>
       <div class="risk-bar-wrap">
-        <div class="risk-bar" style="width:${r.pct}%; background:${rankColors[r.rank]}"></div>
+        <div class="risk-bar" style="width:${r.pct}%; background:${color}"></div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── Render: Checklist ──────────────────────────────────────────────────────────
@@ -445,6 +460,8 @@ function renderChecklist(risks) {
 
   document.getElementById('checklistGrid').innerHTML = groups.map(g => {
     const [cls, label] = confMap[g.confidence] || ['conf-med','Medium confidence'];
+    const checkedCount = g.items.filter((_, i) => localStorage.getItem(ckKey(g.type, i)) === '1').length;
+    const initPct = g.items.length ? Math.round(checkedCount / g.items.length * 100) : 0;
     const items = g.items.map((item, i) => {
       const key = ckKey(g.type, i);
       const checked = localStorage.getItem(key) === '1';
@@ -453,10 +470,12 @@ function renderChecklist(risks) {
         <label class="cb-label ${checked ? 'done' : ''}" for="${key}">${item}</label>
       </div>`;
     }).join('');
-    return `<div class="checklist-group">
+    return `<div class="checklist-group" data-group="${g.type}">
       <div class="checklist-group-head">${g.icon} ${g.name}<span class="conf-badge ${cls}">${label}</span></div>
       <div class="checklist-reason">${g.reason}</div>
       ${items}
+      <div class="ck-group-bar-wrap"><div class="ck-group-bar-fill" style="width:${initPct}%;background-color:${pctColor(initPct)}"></div></div>
+      <button class="ck-reset-btn" onclick="resetGroup('${g.type}', ${g.items.length})">↺ Reset</button>
     </div>`;
   }).join('');
   updateChecklistProgress();
@@ -468,7 +487,7 @@ function updateChecklistProgress() {
   if (!all.length) return;
   const pct = Math.round(checkedCount / all.length * 100);
   document.getElementById('ckPct').textContent = pct + '%';
-  document.getElementById('ckBar').style.width = pct + '%';
+  setBar(document.getElementById('ckBar'), pct);
 }
 
 function toggleItem(cb) {
@@ -481,8 +500,26 @@ function toggleItem(cb) {
     item.classList.add('ck-pop');
     item.addEventListener('animationend', () => item.classList.remove('ck-pop'), { once: true });
   }
+  const group = cb.closest('.checklist-group');
+  if (group) {
+    const cbs = group.querySelectorAll('.kit-cb');
+    const pct = Math.round(group.querySelectorAll('.kit-cb:checked').length / cbs.length * 100);
+    setBar(group.querySelector('.ck-group-bar-fill'), pct);
+  }
   updateChecklistProgress();
   renderTracker();
+}
+
+function resetGroup(type, count) {
+  for (let i = 0; i < count; i++) localStorage.removeItem(ckKey(type, i));
+  const group = document.querySelector(`.checklist-group[data-group="${type}"]`);
+  if (!group) return;
+  group.querySelectorAll('.kit-cb').forEach(cb => {
+    cb.checked = false;
+    cb.nextElementSibling.classList.remove('done');
+  });
+  setBar(group.querySelector('.ck-group-bar-fill'), 0);
+  updateChecklistProgress();
 }
 
 // ── Map ────────────────────────────────────────────────────────────────────────
@@ -583,6 +620,7 @@ function togglePlay() {
 const DEFAULT_TASKS = ['Go-bag packed', 'Emergency contacts memorized', 'Evacuation route reviewed', 'Phone + charger ready'];
 let openEditorMember = null;
 
+function saveFamilies() { localStorage.setItem('mrr_families', JSON.stringify(families)); }
 function memberItemKey(name, label) { return `mrr_mi_${name}::${label}`; }
 function getMemberTasks(name) { return JSON.parse(localStorage.getItem('mrr_tasks_' + name) || 'null') || DEFAULT_TASKS.slice(); }
 function saveMemberTasks(name, tasks) { localStorage.setItem('mrr_tasks_' + name, JSON.stringify(tasks)); }
@@ -592,6 +630,11 @@ function getMemberPct(name) {
   if (!tasks.length) return 0;
   const checked = tasks.filter(label => localStorage.getItem(memberItemKey(name, label)) === '1').length;
   return Math.round(checked / tasks.length * 100);
+}
+
+function getFamilyPct(fam) {
+  if (!fam.members.length) return 0;
+  return Math.round(fam.members.reduce((s, m) => s + getMemberPct(m), 0) / fam.members.length);
 }
 
 function renderMemberTaskEditor(name, tasks) {
@@ -611,38 +654,67 @@ function renderMemberTaskEditor(name, tasks) {
   </div>`;
 }
 
+function renderMemberCard(name, famId) {
+  const tasks = getMemberTasks(name);
+  const pct = getMemberPct(name);
+  const safe = name.replace(/'/g, "\\'");
+  const safeFam = famId.replace(/'/g, "\\'");
+  const isEditing = openEditorMember === name;
+  const statusClass = pct === 100 ? 'ready' : pct > 0 ? 'progress' : 'idle';
+  const editorHtml = isEditing ? renderMemberTaskEditor(name, tasks) : '';
+  const items = tasks.length
+    ? tasks.map(label => {
+        const ck = localStorage.getItem(memberItemKey(name, label)) === '1';
+        const safeLabel = label.replace(/'/g, "\\'");
+        return `<label class="member-item">
+          <input type="checkbox" ${ck ? 'checked' : ''} onchange="toggleMemberItem('${safe}','${safeLabel}',this)"/>
+          ${label}
+        </label>`;
+      }).join('')
+    : '<div style="font-size:0.73rem;color:var(--text-dim);">No tasks — click ✏️ Edit to add.</div>';
+  return `<div class="tracker-card" data-member="${name}">
+    <div class="tracker-name-row">
+      <span class="status-dot ${statusClass}"></span>
+      <span>${name}</span>
+      <span class="tracker-pct">${pct}%</span>
+      <button class="member-edit-tasks${isEditing ? ' active' : ''}" onclick="toggleMemberTaskEditor('${safe}')">✏️ Edit</button>
+      <button class="member-remove" onclick="removeMemberFromFamily('${safeFam}','${safe}')">×</button>
+    </div>
+    ${editorHtml}
+    <div class="tracker-bar-bg"><div class="tracker-bar-fill" style="width:${pct}%;background-color:${pctColor(pct)}"></div></div>
+    <div class="member-items">${items}</div>
+    ${pct === 100 ? '<div class="member-ready-badge">✓ READY</div>' : ''}
+  </div>`;
+}
+
 function renderTracker() {
   const grid = document.getElementById('trackerGrid');
-  if (!members.length) {
-    grid.innerHTML = '<div style="font-size:0.8rem; color:var(--text-dim);">No members added yet.</div>';
+  if (!families.length) {
+    grid.innerHTML = '<div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:4px;">No families yet — add one below.</div>';
     return;
   }
-  grid.innerHTML = members.map(name => {
-    const tasks = getMemberTasks(name);
-    const pct = getMemberPct(name);
-    const safe = name.replace(/'/g, "\\'");
-    const isEditing = openEditorMember === name;
-    const editorHtml = isEditing ? renderMemberTaskEditor(name, tasks) : '';
-    const items = tasks.length
-      ? tasks.map(label => {
-          const ck = localStorage.getItem(memberItemKey(name, label)) === '1';
-          const safeLabel = label.replace(/'/g, "\\'");
-          return `<label class="member-item">
-            <input type="checkbox" ${ck ? 'checked' : ''} onchange="toggleMemberItem('${safe}','${safeLabel}',this)"/>
-            ${label}
-          </label>`;
-        }).join('')
-      : '<div style="font-size:0.73rem;color:var(--text-dim);">No tasks. Click ✏️ to add some.</div>';
-    return `<div class="tracker-card">
-      <div class="tracker-name-row">
-        <span>${name}</span>
-        <span class="tracker-pct">${pct}%</span>
-        <button class="member-edit-tasks${isEditing ? ' active' : ''}" title="Edit tasks" onclick="toggleMemberTaskEditor('${safe}')">✏️</button>
-        <button class="member-remove" onclick="removeMember('${safe}')">×</button>
+  grid.innerHTML = families.map(fam => {
+    const famPct = getFamilyPct(fam);
+    const safeFam = fam.id.replace(/'/g, "\\'");
+    const memberCards = fam.members.length
+      ? fam.members.map(m => renderMemberCard(m, fam.id)).join('')
+      : '<div style="font-size:0.78rem;color:var(--text-dim);padding:0 4px;">No members yet.</div>';
+    const liveHtml = fam.isLive && fam.code
+      ? `<span class="live-badge">● LIVE</span><button class="code-btn" data-code="${fam.code}" onclick="copyFamilyCode('${fam.code}')" title="Click to copy invite code">📋 ${fam.code}</button>`
+      : `<button class="go-live-btn" onclick="goLive('${safeFam}')">Go Live</button>`;
+    return `<div class="family-section" data-family="${fam.id}">
+      <div class="family-header">
+        <span class="family-name">👨‍👩‍👧 ${fam.name}</span>
+        ${liveHtml}
+        <span class="family-pct">${famPct}% ready</span>
+        <button class="family-remove" onclick="removeFamily('${safeFam}')">×</button>
       </div>
-      ${editorHtml}
-      <div class="tracker-bar-bg"><div class="tracker-bar-fill" style="width:${pct}%"></div></div>
-      <div class="member-items">${items}</div>
+      <div class="family-bar-bg"><div class="family-bar-fill" style="width:${famPct}%;background-color:${pctColor(famPct)}"></div></div>
+      <div class="family-members">${memberCards}</div>
+      <div class="family-add-member">
+        <input type="text" class="tracker-input family-member-input" data-family="${fam.id}" placeholder="Add member name…" maxlength="30" style="padding:5px 10px;font-size:0.8rem;" onkeydown="if(event.key==='Enter')addMemberToFamily('${safeFam}')"/>
+        <button class="btn btn-secondary" style="padding:5px 10px;font-size:0.8rem;" onclick="addMemberToFamily('${safeFam}')">+ Add</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -674,34 +746,239 @@ function removeMemberTask(name, i) {
 function toggleMemberItem(name, label, cb) {
   localStorage.setItem(memberItemKey(name, label), cb.checked ? '1' : '0');
   const pct = getMemberPct(name);
-  for (const card of document.querySelectorAll('.tracker-card')) {
-    if (card.querySelector('.tracker-name-row span')?.textContent === name) {
-      card.querySelector('.tracker-pct').textContent = pct + '%';
-      card.querySelector('.tracker-bar-fill').style.width = pct + '%';
-      break;
+  const card = document.querySelector(`.tracker-card[data-member="${name}"]`);
+  if (card) {
+    card.querySelector('.tracker-pct').textContent = pct + '%';
+    setBar(card.querySelector('.tracker-bar-fill'), pct);
+    const dot = card.querySelector('.status-dot');
+    if (dot) dot.className = 'status-dot ' + (pct === 100 ? 'ready' : pct > 0 ? 'progress' : 'idle');
+    const badge = card.querySelector('.member-ready-badge');
+    if (pct === 100 && !badge) {
+      const el = document.createElement('div');
+      el.className = 'member-ready-badge'; el.textContent = '✓ READY'; card.appendChild(el);
+    } else if (pct < 100 && badge) badge.remove();
+    const famSection = card.closest('.family-section');
+    if (famSection) {
+      const fam = families.find(f => f.id === famSection.dataset.family);
+      if (fam) {
+        const fp = getFamilyPct(fam);
+        famSection.querySelector('.family-pct').textContent = fp + '% ready';
+        setBar(famSection.querySelector('.family-bar-fill'), fp);
+        if (!applyingRemote) pushProgressToYjs(fam, name);
+      }
     }
   }
 }
 
-function addMember() {
-  const input = document.getElementById('memberInput');
+function addFamily() {
+  const input = document.getElementById('familyInput');
   const name = input.value.trim();
-  if (!name || members.includes(name)) return;
-  members.push(name);
-  localStorage.setItem('mrr_members', JSON.stringify(members));
-  if (!localStorage.getItem('mrr_tasks_' + name)) {
-    saveMemberTasks(name, DEFAULT_TASKS.slice());
-  }
+  if (!name) return;
+  families.push({ id: 'fam_' + Date.now(), name, members: [] });
+  saveFamilies();
   input.value = '';
   renderTracker();
 }
 
-function removeMember(name) {
-  members = members.filter(m => m !== name);
-  localStorage.setItem('mrr_members', JSON.stringify(members));
+function removeFamily(id) {
+  const fam = families.find(f => f.id === id);
+  if (fam) {
+    fam.members.forEach(m => localStorage.removeItem('mrr_tasks_' + m));
+    if (fam.code && ydocs[fam.code]) {
+      try { ydocs[fam.code].rtc.destroy(); ydocs[fam.code].idb.destroy(); } catch(e) {}
+      delete ydocs[fam.code];
+    }
+  }
+  families = families.filter(f => f.id !== id);
+  saveFamilies();
+  renderTracker();
+}
+
+function addMemberToFamily(famId) {
+  const input = document.querySelector(`.family-member-input[data-family="${famId}"]`);
+  if (!input) return;
+  const name = input.value.trim();
+  if (!name) return;
+  const fam = families.find(f => f.id === famId);
+  if (!fam || fam.members.includes(name)) return;
+  fam.members.push(name);
+  saveFamilies();
+  if (!localStorage.getItem('mrr_tasks_' + name)) saveMemberTasks(name, DEFAULT_TASKS.slice());
+  input.value = '';
+  if (fam.isLive) pushMemberToYjs(fam, name);
+  renderTracker();
+}
+
+function removeMemberFromFamily(famId, name) {
+  const fam = families.find(f => f.id === famId);
+  if (!fam) return;
+  fam.members = fam.members.filter(m => m !== name);
+  saveFamilies();
   localStorage.removeItem('mrr_tasks_' + name);
   if (openEditorMember === name) openEditorMember = null;
   renderTracker();
+}
+
+// ── Live Sync (Y.js + WebRTC — zero config, lazy-loaded) ───────────────────────
+const ydocs = {};     // code → { doc, rtc, idb }
+let applyingRemote = false;
+let _yjsLoadPromise = null;
+
+function ensureYjs() {
+  if (_yjsLoadPromise) return _yjsLoadPromise;
+  // Check if globals are already present (e.g. loaded by prior call)
+  if (window.Y && window.yIndexeddb && window.yWebrtc) {
+    return (_yjsLoadPromise = Promise.resolve(true));
+  }
+  _yjsLoadPromise = new Promise((resolve, reject) => {
+    const srcs = [
+      'https://unpkg.com/yjs@13/dist/yjs.umd.js',
+      'https://unpkg.com/y-indexeddb@9/dist/y-indexeddb.umd.js',
+      'https://unpkg.com/y-webrtc@10/dist/y-webrtc.umd.js',
+    ];
+    let done = 0;
+    srcs.forEach(src => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload  = () => { if (++done === srcs.length) resolve(true); };
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  });
+  return _yjsLoadPromise;
+}
+
+function generateCode() {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
+}
+
+async function goLive(famId) {
+  const fam = families.find(f => f.id === famId);
+  if (!fam) return;
+  if (!fam.code) { fam.code = generateCode(); fam.isLive = true; saveFamilies(); }
+  renderTracker(); // show spinner/badge immediately
+  try {
+    await ensureYjs();
+    startYjsSync(fam);
+    renderTracker();
+  } catch(e) {
+    console.warn('Y.js load failed:', e);
+    alert('Could not connect to real-time sync. Check your internet connection.');
+  }
+}
+
+async function joinFamilyByCode(code) {
+  const joinInput = document.getElementById('joinCodeInput');
+  code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  if (!code) return;
+  if (families.some(f => f.code === code)) { alert('You are already in this family.'); return; }
+  const id = 'fam_' + Date.now();
+  const fam = { id, name: 'Joining…', members: [], isLive: true, code };
+  families.push(fam);
+  saveFamilies();
+  if (joinInput) joinInput.value = '';
+  renderTracker();
+  try {
+    await ensureYjs();
+    startYjsSync(fam);
+    renderTracker();
+  } catch(e) {
+    console.warn('Y.js load failed:', e);
+    alert('Could not connect to real-time sync. Check your internet connection.');
+  }
+}
+
+function startYjsSync(fam) {
+  if (ydocs[fam.code]) return;
+  const room = 'mrr-family-' + fam.code;
+  const doc = new Y.Doc();
+  const idb = new yIndexeddb.IndexeddbPersistence(room, doc);
+  const rtc = new yWebrtc.WebrtcProvider(room, doc, {
+    signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signal-eu.fly.dev']
+  });
+  ydocs[fam.code] = { doc, rtc, idb };
+
+  const yMeta     = doc.getMap('meta');
+  const yMembers  = doc.getArray('members');
+  const yTasks    = doc.getMap('tasks');
+  const yProgress = doc.getMap('progress');
+
+  // Once IndexedDB has loaded local history, push our own state into the doc
+  idb.on('synced', () => {
+    doc.transact(() => {
+      if (!yMeta.get('name')) yMeta.set('name', fam.name);
+      fam.members.forEach(name => {
+        if (!yMembers.toArray().includes(name)) yMembers.push([name]);
+        yTasks.set(name, getMemberTasks(name));
+        getMemberTasks(name).forEach(t => {
+          const key = name + '::' + t;
+          if (!yProgress.has(key))
+            yProgress.set(key, localStorage.getItem(memberItemKey(name, t)) === '1');
+        });
+      });
+    }, 'local');
+    applyYjsToLocal(fam.id, doc);
+  });
+
+  // React to updates from remote peers
+  doc.on('update', (_, origin) => {
+    if (origin !== 'local') applyYjsToLocal(fam.id, doc);
+  });
+}
+
+function applyYjsToLocal(famId, doc) {
+  applyingRemote = true;
+  try {
+    const fam = families.find(f => f.id === famId);
+    if (!fam) return;
+    const yMeta     = doc.getMap('meta');
+    const yMembers  = doc.getArray('members');
+    const yTasks    = doc.getMap('tasks');
+    const yProgress = doc.getMap('progress');
+    const remoteName = yMeta.get('name');
+    if (remoteName && remoteName !== 'Joining…') fam.name = remoteName;
+    yMembers.toArray().forEach(name => {
+      if (!fam.members.includes(name)) fam.members.push(name);
+    });
+    saveFamilies();
+    fam.members.forEach(name => {
+      const tasks = yTasks.get(name);
+      if (tasks) saveMemberTasks(name, tasks);
+      getMemberTasks(name).forEach(t => {
+        localStorage.setItem(memberItemKey(name, t),
+          yProgress.get(name + '::' + t) ? '1' : '0');
+      });
+    });
+    renderTracker();
+  } finally { applyingRemote = false; }
+}
+
+function pushProgressToYjs(fam, name) {
+  if (!fam.isLive || !ydocs[fam.code] || applyingRemote) return;
+  const { doc } = ydocs[fam.code];
+  doc.transact(() => {
+    getMemberTasks(name).forEach(t => {
+      doc.getMap('progress').set(name + '::' + t,
+        localStorage.getItem(memberItemKey(name, t)) === '1');
+    });
+  }, 'local');
+}
+
+function pushMemberToYjs(fam, name) {
+  if (!fam.isLive || !ydocs[fam.code]) return;
+  const { doc } = ydocs[fam.code];
+  doc.transact(() => {
+    const yMembers = doc.getArray('members');
+    if (!yMembers.toArray().includes(name)) yMembers.push([name]);
+    doc.getMap('tasks').set(name, getMemberTasks(name));
+  }, 'local');
+}
+
+function copyFamilyCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector(`.code-btn[data-code="${code}"]`);
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = orig, 1500); }
+  });
 }
 
 // ── Main load flow ─────────────────────────────────────────────────────────────
@@ -887,7 +1164,16 @@ function saveReport() {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
-  document.getElementById('memberInput').addEventListener('keydown', e => { if (e.key === 'Enter') addMember(); });
+  document.getElementById('familyInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFamily(); });
+  document.getElementById('joinCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinFamilyByCode(e.target.value); });
+  // Reconnect any families that were already live (restores real-time sync on reload)
+  const liveFamilies = families.filter(f => f.isLive && f.code);
+  if (liveFamilies.length) {
+    ensureYjs().then(() => {
+      liveFamilies.forEach(startYjsSync);
+      renderTracker();
+    }).catch(e => console.warn('Y.js reconnect skipped:', e));
+  }
 
   const yrInput = document.getElementById('yrInput');
   const commitYrInput = () => {

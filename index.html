@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>My Region's Risk</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root {
@@ -27,8 +30,8 @@
       --text: #1a1d27;
       --text-dim: #5a6278;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     header { background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%); border-bottom: 1px solid var(--border); padding: 18px 24px; display: flex; align-items: center; gap: 12px; }
     header .logo { font-size: 1.5rem; }
@@ -134,6 +137,8 @@
     .conf-med  { background: rgba(255,209,102,0.12); color: var(--warning); }
     .conf-low  { background: rgba(239,71,111,0.12); color: var(--danger); }
     .checklist-reason { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px; }
+    .ck-reset-btn { margin-top: 10px; width: 100%; padding: 5px 0; background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); font-size: 0.72rem; cursor: pointer; transition: all 0.15s; }
+    .ck-reset-btn:hover { background: var(--border); color: var(--text); }
     .checklist-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 4px; border-bottom: 1px solid rgba(46,51,71,0.5); border-radius: 5px; transition: background 0.15s; }
     .checklist-item:last-child { border-bottom: none; }
     .kit-cb { width: 16px; height: 16px; accent-color: var(--safe); cursor: pointer; flex-shrink: 0; margin-top: 2px; }
@@ -151,20 +156,48 @@
     .ck-progress-label { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; }
     .ck-progress-pct { font-weight: 700; color: var(--safe); font-size: 0.88rem; }
     .ck-bar-bg { height: 7px; background: var(--border); border-radius: 4px; overflow: hidden; }
-    .ck-bar-fill { height: 100%; background: linear-gradient(90deg, var(--safe), #4ecdc4); border-radius: 4px; transition: width 0.45s ease; width: 0%; }
+    .ck-bar-fill { height: 100%; border-radius: 4px; transition: width 0.45s ease, background-color 0.45s ease; width: 0%; }
+    .ck-group-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .ck-group-bar-fill { height: 100%; border-radius: 2px; transition: width 0.45s ease, background-color 0.45s ease; }
 
-    .tracker-controls { display: flex; gap: 8px; margin-bottom: 12px; }
     .tracker-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; color: var(--text); font-size: 0.83rem; outline: none; }
-    .tracker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-    .tracker-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
-    .tracker-name-row { display: flex; align-items: center; justify-content: space-between; font-size: 0.83rem; font-weight: 600; margin-bottom: 4px; }
-    .tracker-pct { color: var(--safe); font-size: 0.75rem; }
+    .add-family-row { display: flex; gap: 8px; margin-top: 8px; }
+
+    .family-section { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+    .family-header { display: flex; align-items: center; gap: 7px; padding: 9px 14px; background: var(--surface2); flex-wrap: wrap; }
+    .family-name { font-size: 0.88rem; font-weight: 700; flex: 1; }
+    .family-pct { font-size: 0.72rem; color: var(--text-dim); white-space: nowrap; }
+    .family-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
+    .family-remove:hover { color: var(--danger); }
+    .family-bar-bg { height: 3px; background: var(--border); }
+    .family-bar-fill { height: 100%; transition: width 0.5s ease, background-color 0.5s ease; }
+    .family-members { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; padding: 12px; }
+    .family-add-member { display: flex; gap: 6px; padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface2); }
+
+    .live-badge { font-size: 0.7rem; font-weight: 700; color: var(--safe); animation: dot-pulse 1.4s ease-in-out infinite; white-space: nowrap; }
+    .code-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 0.72rem; font-weight: 700; cursor: pointer; color: var(--text); letter-spacing: 0.07em; transition: background 0.15s; }
+    .code-btn:hover { background: var(--border); }
+    .go-live-btn { background: none; border: 1px solid var(--danger); border-radius: 6px; padding: 3px 9px; font-size: 0.72rem; font-weight: 600; cursor: pointer; color: var(--danger); transition: background 0.15s; white-space: nowrap; }
+    .go-live-btn:hover { background: rgba(239,71,111,0.1); }
+
+    .tracker-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    .tracker-name-row { display: flex; align-items: center; gap: 5px; font-size: 0.83rem; font-weight: 600; margin-bottom: 6px; }
+    .tracker-name-row > span:nth-child(2) { flex: 1; }
+    .tracker-pct { font-size: 0.72rem; color: var(--text-dim); }
     .tracker-bar-bg { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 8px; }
-    .tracker-bar-fill { height: 100%; background: var(--safe); border-radius: 2px; transition: width 0.55s cubic-bezier(0.4, 0, 0.2, 1); }
+    .tracker-bar-fill { height: 100%; border-radius: 2px; transition: width 0.55s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.55s ease; }
     .member-items { display: flex; flex-direction: column; gap: 4px; }
     .member-item { display: flex; align-items: center; gap: 6px; font-size: 0.73rem; color: var(--text-dim); }
     .member-item input { accent-color: var(--safe); width: 13px; height: 13px; flex-shrink: 0; }
     .member-remove { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; }
+    .member-remove:hover { color: var(--danger); }
+    .member-ready-badge { text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--safe); margin-top: 6px; letter-spacing: 0.04em; }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.idle     { background: var(--danger); }
+    .status-dot.progress { background: var(--warning); animation: dot-pulse 1.4s ease-in-out infinite; }
+    .status-dot.ready    { background: var(--safe); box-shadow: 0 0 5px var(--safe); }
+    @keyframes dot-pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
 
     .task-editor-list { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
     .task-editor-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text); padding: 3px 4px; border-radius: 5px; }
@@ -173,8 +206,8 @@
     .task-editor-del { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0 2px; }
     .task-editor-del:hover { color: var(--danger); }
     .task-add-row { display: flex; gap: 6px; }
-    .member-task-editor-panel { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin: 6px 0; }
-    .member-edit-tasks { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.8rem; padding: 0 3px; line-height: 1; border-radius: 4px; transition: background 0.15s; }
+    .member-task-editor-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin: 0 0 8px; }
+    .member-edit-tasks { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 0.75rem; padding: 0 3px; line-height: 1; border-radius: 4px; transition: background 0.15s; }
     .member-edit-tasks:hover, .member-edit-tasks.active { background: var(--border); color: var(--text); }
 
     .badge { font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
@@ -314,11 +347,15 @@
         <span class="card-title">👨‍👩‍👧 Household Tracker</span>
       </div>
       <div class="card-body">
-        <div class="tracker-controls">
-          <input type="text" id="memberInput" class="tracker-input" placeholder="Add member name…" maxlength="30"/>
-          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" onclick="addMember()">+ Add</button>
+        <div id="trackerGrid"></div>
+        <div class="add-family-row">
+          <input type="text" id="familyInput" class="tracker-input" placeholder="New family name…" maxlength="40"/>
+          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" onclick="addFamily()">+ Family</button>
         </div>
-        <div id="trackerGrid" class="tracker-grid"></div>
+        <div class="add-family-row" style="margin-top:6px;">
+          <input type="text" id="joinCodeInput" class="tracker-input" placeholder="Enter code to join a family…" maxlength="8" style="text-transform:uppercase; letter-spacing:0.08em;"/>
+          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" onclick="joinFamilyByCode(document.getElementById('joinCodeInput').value)">Join</button>
+        </div>
       </div>
     </div>
 
