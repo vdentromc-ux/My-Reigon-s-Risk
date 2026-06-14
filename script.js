@@ -1095,13 +1095,18 @@ async function joinFamilyByCode(code) {
     await ensureYjs();
     startYjsSync(fam);
     renderTracker();
-    // Validate the code: if no host data arrives within 10 s, warn the user
+    // Validate the code: if no host data arrives within 10 s, remove and alert
     setTimeout(() => {
       const f = families.find(x => x.id === id);
       if (f && f.name === 'Joining…') {
-        f.name = '⚠️ No host found';
+        families = families.filter(x => x.id !== id);
+        if (ydocs[code]) {
+          try { ydocs[code].rtc.destroy(); ydocs[code].idb.destroy(); } catch(e) {}
+          delete ydocs[code];
+        }
         saveFamilies();
         renderTracker();
+        alert('Error: Family Not Found');
       }
     }, 10000);
   } catch(e) {
