@@ -930,7 +930,7 @@ function removeFamily(id) {
   if (fam) {
     fam.members.forEach(m => localStorage.removeItem('mrr_tasks_' + m));
     if (fam.code && ydocs[fam.code]) {
-      try { ydocs[fam.code].rtc.destroy(); ydocs[fam.code].idb.destroy(); } catch(e) {}
+      try { ydocs[fam.code].ws?.destroy(); ydocs[fam.code].idb?.destroy(); } catch(e) {}
       delete ydocs[fam.code];
     }
   }
@@ -1032,29 +1032,27 @@ async function showWeatherPage() {
   });
 }
 
-// ── Live Sync (Y.js + WebRTC — zero config, lazy-loaded) ───────────────────────
-const ydocs = {};     // code → { doc, rtc, idb }
+// ── Live Sync (Y.js + WebSocket — zero config, lazy-loaded) ────────────────────
+const ydocs = {};     // code → { doc, ws, idb }
 let applyingRemote = false;
 let _yjsLoadPromise = null;
 
 function ensureYjs() {
   if (_yjsLoadPromise) return _yjsLoadPromise;
-  if (window.Y && window.yIndexeddb && window.yWebrtc) {
+  if (window.Y && window.yIndexeddb && window.yWebsocket) {
     return (_yjsLoadPromise = Promise.resolve(true));
   }
-  // Use dynamic ES module imports via esm.sh — works without a bundler and
-  // handles packages (y-webrtc, y-indexeddb) that have no UMD build.
   _yjsLoadPromise = Promise.all([
     import('https://esm.sh/yjs@13.6.11'),
     import('https://esm.sh/y-indexeddb@9.0.10'),
-    import('https://esm.sh/y-webrtc@10.2.5'),
-  ]).then(([Y, idb, rtc]) => {
-    window.Y   = Y;
+    import('https://esm.sh/y-websocket@1.5.4'),
+  ]).then(([Y, idb, ws]) => {
+    window.Y          = Y;
     window.yIndexeddb = idb;
-    window.yWebrtc    = rtc;
+    window.yWebsocket = ws;
     return true;
   }).catch(err => {
-    _yjsLoadPromise = null; // allow retry on next click
+    _yjsLoadPromise = null;
     throw err;
   });
   return _yjsLoadPromise;
@@ -1101,7 +1099,7 @@ async function joinFamilyByCode(code) {
       if (f && f.name === 'Joining…') {
         families = families.filter(x => x.id !== id);
         if (ydocs[code]) {
-          try { ydocs[code].rtc.destroy(); ydocs[code].idb.destroy(); } catch(e) {}
+          try { ydocs[code].ws?.destroy(); ydocs[code].idb?.destroy(); } catch(e) {}
           delete ydocs[code];
         }
         saveFamilies();
@@ -1121,12 +1119,12 @@ async function joinFamilyByCode(code) {
 function startYjsSync(fam) {
   if (ydocs[fam.code]) return;
   const room = 'mrr-family-' + fam.code;
-  const doc = new Y.Doc();
-  const idb = new yIndexeddb.IndexeddbPersistence(room, doc);
-  const rtc = new yWebrtc.WebrtcProvider(room, doc, {
-    signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signal-eu.fly.dev', 'wss://demos.yjs.dev/ws/']
-  });
-  ydocs[fam.code] = { doc, rtc, idb };
+  const doc  = new Y.Doc();
+  const idb  = new yIndexeddb.IndexeddbPersistence(room, doc);
+  // y-websocket: connect to the official Y.js demo server — simple WebSocket,
+  // no peer discovery or NAT traversal needed unlike WebRTC.
+  const ws   = new yWebsocket.WebsocketProvider('wss://demos.yjs.dev', room, doc);
+  ydocs[fam.code] = { doc, ws, idb };
 
   const yMeta     = doc.getMap('meta');
   const yMembers  = doc.getArray('members');
@@ -1135,14 +1133,13 @@ function startYjsSync(fam) {
 
   const apply = () => applyYjsToLocal(fam.id, doc);
 
-  // Observe each structure so ANY change (local or remote) triggers a re-apply
   yMembers.observe(apply);
   yTasks.observe(apply);
   yProgress.observe(apply);
   yMeta.observe(apply);
 
-  // When a new peer connects, immediately apply in case they sent a full state
-  rtc.awareness.on('change', apply);
+  // Re-apply whenever the WebSocket connects (catches initial server state)
+  ws.on('status', ({ status }) => { if (status === 'connected') apply(); });
 
   // Once IndexedDB has loaded, push our own local state into the shared doc
   idb.on('synced', () => {
