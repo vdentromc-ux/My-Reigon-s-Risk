@@ -1039,24 +1039,23 @@ let _yjsLoadPromise = null;
 
 function ensureYjs() {
   if (_yjsLoadPromise) return _yjsLoadPromise;
-  // Check if globals are already present (e.g. loaded by prior call)
   if (window.Y && window.yIndexeddb && window.yWebrtc) {
     return (_yjsLoadPromise = Promise.resolve(true));
   }
-  _yjsLoadPromise = new Promise((resolve, reject) => {
-    const srcs = [
-      'https://unpkg.com/yjs@13/dist/yjs.umd.js',
-      'https://unpkg.com/y-indexeddb@9/dist/y-indexeddb.umd.js',
-      'https://unpkg.com/y-webrtc@10/dist/y-webrtc.umd.js',
-    ];
-    let done = 0;
-    srcs.forEach(src => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload  = () => { if (++done === srcs.length) resolve(true); };
-      s.onerror = () => reject(new Error('Failed to load ' + src));
-      document.head.appendChild(s);
-    });
+  // Use dynamic ES module imports via esm.sh — works without a bundler and
+  // handles packages (y-webrtc, y-indexeddb) that have no UMD build.
+  _yjsLoadPromise = Promise.all([
+    import('https://esm.sh/yjs@13.6.11'),
+    import('https://esm.sh/y-indexeddb@9.0.10'),
+    import('https://esm.sh/y-webrtc@10.2.5'),
+  ]).then(([Y, idb, rtc]) => {
+    window.Y   = Y;
+    window.yIndexeddb = idb;
+    window.yWebrtc    = rtc;
+    return true;
+  }).catch(err => {
+    _yjsLoadPromise = null; // allow retry on next click
+    throw err;
   });
   return _yjsLoadPromise;
 }
