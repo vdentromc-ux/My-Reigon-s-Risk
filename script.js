@@ -445,6 +445,7 @@ function applyDays(days) {
   document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.period-btn').forEach(b =>
     b.classList.toggle('active', +b.dataset.days === days));
+  setupSliderDays(days);
   const risks = analyzeRisks(storedEarthquakes, storedNaturalEvents, storedAlerts, analysisYears);
   renderRisks(risks);
   renderChecklist(risks);
@@ -634,8 +635,12 @@ function windowEvents(years) {
   return allEvents.filter(ev => !ev.date || ev.date >= cutoff);
 }
 
-function setupSlider(years) {
+function stopPlay() {
   if (playInterval) { clearInterval(playInterval); playInterval = null; document.getElementById('playBtn').textContent = '▶ Play'; }
+}
+
+function setupSlider(years) {
+  stopPlay();
   const curYear = new Date().getFullYear();
   sliderYears = Array.from({ length: years }, (_, i) => curYear - years + 1 + i);
   const slider = document.getElementById('timeSlider');
@@ -655,18 +660,67 @@ function setupSlider(years) {
   };
 }
 
+function setupSliderDays(totalDays) {
+  stopPlay();
+  const isHours = totalDays === 1;
+  const steps = isHours ? 24 : totalDays;
+  const slider = document.getElementById('timeSlider');
+  slider.min = 0;
+  slider.max = steps;
+  slider.value = steps;
+
+  if (isHours) {
+    document.getElementById('sliderRange').textContent = 'Last 24 hours';
+  } else {
+    const oldest = new Date(Date.now() - (totalDays - 1) * 86400000);
+    document.getElementById('sliderRange').textContent =
+      `${oldest.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – Today`;
+  }
+  document.getElementById('timeDisplay').textContent = 'All';
+
+  const base = windowEvents(totalDays / 365.25);
+  renderMapEvents(base);
+
+  slider.oninput = () => {
+    const idx = parseInt(slider.value);
+    if (idx >= steps) {
+      document.getElementById('timeDisplay').textContent = 'All';
+      renderMapEvents(base);
+      return;
+    }
+    if (isHours) {
+      const hoursAgo = 23 - idx;
+      const target = new Date(Date.now() - hoursAgo * 3600000);
+      document.getElementById('timeDisplay').textContent =
+        hoursAgo === 0 ? 'This hour' : `${hoursAgo}h ago`;
+      renderMapEvents(base.filter(e => {
+        if (!e.date) return false;
+        return e.date.getFullYear() === target.getFullYear() &&
+               e.date.getMonth()    === target.getMonth()    &&
+               e.date.getDate()     === target.getDate()     &&
+               e.date.getHours()    === target.getHours();
+      }));
+    } else {
+      const daysAgo = totalDays - 1 - idx;
+      const target = new Date(Date.now() - daysAgo * 86400000);
+      document.getElementById('timeDisplay').textContent =
+        daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo}d ago`;
+      renderMapEvents(base.filter(e => e.date && e.date.toDateString() === target.toDateString()));
+    }
+  };
+}
+
 function togglePlay() {
   const btn = document.getElementById('playBtn');
   const slider = document.getElementById('timeSlider');
+  const sliderMax = parseInt(slider.max);
 
   if (playInterval) {
-    // Pause — keep slider position
     clearInterval(playInterval); playInterval = null;
     btn.textContent = '▶ Resume'; return;
   }
 
-  // If already at the end ("All Years" position), restart from the beginning
-  if (parseInt(slider.value) >= analysisYears) {
+  if (parseInt(slider.value) >= sliderMax) {
     slider.value = 0;
     slider.dispatchEvent(new Event('input'));
   }
@@ -674,7 +728,7 @@ function togglePlay() {
   btn.textContent = '⏸ Pause';
   playInterval = setInterval(() => {
     const next = parseInt(slider.value) + 1;
-    if (next > analysisYears) {
+    if (next > sliderMax) {
       clearInterval(playInterval); playInterval = null;
       btn.textContent = '▶ Play'; return;
     }
