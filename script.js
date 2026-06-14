@@ -981,7 +981,7 @@ const WMO_DESC = code =>
 async function fetchWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&current=temperature_2m,apparent_temperature,precipitation,wind_speed_10m,weather_code` +
-    `&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto`;
+    `&temperature_unit=celsius&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Weather fetch failed');
   return (await res.json()).current;
@@ -997,8 +997,8 @@ function renderWeather(data) {
     <div style="text-align:center; padding:28px 0 18px;">
       <div style="font-size:4.5rem; line-height:1; margin-bottom:10px;">${WMO_ICON(code)}</div>
       <div style="font-size:0.9rem; color:var(--text-dim); margin-bottom:10px; font-weight:600; letter-spacing:0.03em;">${WMO_DESC(code)}</div>
-      <div style="font-size:4rem; font-weight:700; color:var(--accent); line-height:1;">${temp}°F</div>
-      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">Feels like <strong style="color:var(--text);">${feels}°F</strong></div>
+      <div style="font-size:4rem; font-weight:700; color:var(--accent); line-height:1;">${temp}°C</div>
+      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">Feels like <strong style="color:var(--text);">${feels}°C</strong></div>
     </div>
     <div class="weather-grid">
       <div class="weather-stat-card">
