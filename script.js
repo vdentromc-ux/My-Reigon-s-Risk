@@ -656,7 +656,16 @@ function setupSlider(years) {
     const year = idx < years ? sliderYears[idx] : null;
     document.getElementById('timeDisplay').textContent = year ? String(year) : 'All Years';
     const base = windowEvents(years);
-    renderMapEvents(year === null ? base : base.filter(e => e.year === year));
+    if (year === null) {
+      renderMapEvents(base);
+    } else {
+      const yStart = new Date(year, 0, 1).getTime();
+      const yEnd   = new Date(year + 1, 0, 1).getTime();
+      renderMapEvents(base.filter(e => {
+        if (!e.date) return year === curYear; // ongoing events (no date) show in current year
+        return e.date.getTime() >= yStart && e.date.getTime() < yEnd;
+      }));
+    }
   };
 }
 
