@@ -60,26 +60,36 @@ let currentState = 'empty';
 
 function showState(which) {
   currentState = which;
-  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage'].forEach(id => {
+  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage','weatherPage'].forEach(id => {
     document.getElementById(id)?.classList.add('hidden');
   });
   const backBtn = document.getElementById('backBtn');
   const checklistBtn = document.getElementById('checklistBtn');
+  const weatherBtn  = document.getElementById('weatherBtn');
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('shareRow').classList.remove('hidden');
     backBtn.textContent = '← Back to Menu';
     backBtn.classList.remove('hidden');
     checklistBtn.classList.remove('hidden');
+    weatherBtn.classList.remove('hidden');
   } else if (which === 'checklist') {
     document.getElementById('checklistPage').classList.remove('hidden');
     backBtn.textContent = '← Results';
     backBtn.classList.remove('hidden');
     checklistBtn.classList.add('hidden');
+    weatherBtn.classList.add('hidden');
+  } else if (which === 'weather') {
+    document.getElementById('weatherPage').classList.remove('hidden');
+    backBtn.textContent = '← Results';
+    backBtn.classList.remove('hidden');
+    checklistBtn.classList.add('hidden');
+    weatherBtn.classList.add('hidden');
   } else {
     document.getElementById(which + 'State').classList.remove('hidden');
     backBtn.classList.add('hidden');
     checklistBtn.classList.add('hidden');
+    weatherBtn.classList.add('hidden');
   }
 }
 
@@ -117,10 +127,11 @@ function showChecklistPage() {
 
 function backToMenu() {
   if (currentState === 'checklist') {
-    fadeOutThen(['checklistPage'], () => {
-      showState('main');
-      enterPage('mainContent', 'page-enter-left');
-    });
+    fadeOutThen(['checklistPage'], () => { showState('main'); enterPage('mainContent', 'page-enter-left'); });
+    return;
+  }
+  if (currentState === 'weather') {
+    fadeOutThen(['weatherPage'], () => { showState('main'); enterPage('mainContent', 'page-enter-left'); });
     return;
   }
   const fadeTargets = ['mainContent', 'shareRow'].map(id => document.getElementById(id)).filter(el => !el.classList.contains('hidden'));
@@ -953,6 +964,75 @@ function removeMemberFromFamily(famId, name) {
   renderTracker();
 }
 
+// ── Weather ───────────────────────────────────────────────────────────────────
+let weatherData = null;
+
+const WMO_ICON = code =>
+  code === 0 ? '☀️' : code <= 3 ? '⛅' : code <= 48 ? '🌫️' :
+  code <= 57 ? '🌦️' : code <= 67 ? '🌧️' : code <= 77 ? '❄️' :
+  code <= 82 ? '🌧️' : code <= 86 ? '❄️' : '⛈️';
+
+const WMO_DESC = code =>
+  code === 0 ? 'Clear Sky' : code === 1 ? 'Mostly Clear' : code === 2 ? 'Partly Cloudy' :
+  code === 3 ? 'Overcast' : code <= 48 ? 'Foggy' : code <= 57 ? 'Drizzle' :
+  code <= 67 ? 'Rain' : code <= 77 ? 'Snow' : code <= 82 ? 'Rain Showers' :
+  code <= 86 ? 'Snow Showers' : 'Thunderstorm';
+
+async function fetchWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&current=temperature_2m,apparent_temperature,precipitation,wind_speed_10m,weather_code` +
+    `&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Weather fetch failed');
+  return (await res.json()).current;
+}
+
+function renderWeather(data) {
+  const temp   = Math.round(data.temperature_2m);
+  const feels  = Math.round(data.apparent_temperature);
+  const wind   = Math.round(data.wind_speed_10m);
+  const precip = data.precipitation.toFixed(2);
+  const code   = data.weather_code;
+  document.getElementById('weatherBody').innerHTML = `
+    <div style="text-align:center; padding:28px 0 18px;">
+      <div style="font-size:4.5rem; line-height:1; margin-bottom:10px;">${WMO_ICON(code)}</div>
+      <div style="font-size:0.9rem; color:var(--text-dim); margin-bottom:10px; font-weight:600; letter-spacing:0.03em;">${WMO_DESC(code)}</div>
+      <div style="font-size:4rem; font-weight:700; color:var(--accent); line-height:1;">${temp}°F</div>
+      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">Feels like <strong style="color:var(--text);">${feels}°F</strong></div>
+    </div>
+    <div class="weather-grid">
+      <div class="weather-stat-card">
+        <div class="weather-stat-icon">💨</div>
+        <div class="weather-stat-label">Wind Speed</div>
+        <div class="weather-stat-value">${wind} <span style="font-size:0.9rem;color:var(--text-dim);">mph</span></div>
+      </div>
+      <div class="weather-stat-card">
+        <div class="weather-stat-icon">🌧️</div>
+        <div class="weather-stat-label">Precipitation</div>
+        <div class="weather-stat-value">${precip} <span style="font-size:0.9rem;color:var(--text-dim);">in</span></div>
+      </div>
+    </div>`;
+}
+
+async function showWeatherPage() {
+  fadeOutThen(['mainContent', 'shareRow'], async () => {
+    showState('weather');
+    enterPage('weatherPage', 'page-enter-right');
+    document.getElementById('weatherLocation').textContent = currentLocation?.name || '';
+    if (weatherData) { renderWeather(weatherData); return; }
+    document.getElementById('weatherBody').innerHTML =
+      '<div style="text-align:center;padding:40px 0;"><div class="spinner"></div>' +
+      '<div style="color:var(--text-dim);font-size:0.88rem;margin-top:8px;">Fetching weather…</div></div>';
+    try {
+      weatherData = await fetchWeather(currentLocation.lat, currentLocation.lon);
+      renderWeather(weatherData);
+    } catch(e) {
+      document.getElementById('weatherBody').innerHTML =
+        '<div style="color:var(--danger);text-align:center;padding:24px;">Failed to load weather data.</div>';
+    }
+  });
+}
+
 // ── Live Sync (Y.js + WebRTC — zero config, lazy-loaded) ───────────────────────
 const ydocs = {};     // code → { doc, rtc, idb }
 let applyingRemote = false;
@@ -1140,6 +1220,7 @@ async function loadRegion(lat, lon, name) {
     cachedYears = YEARS_BACK;
     analysisYears = YEARS_BACK;
     analysisLabel = YEARS_BACK + '-yr';
+    weatherData = null;
 
     showState('main');
     initMap(lat, lon);
