@@ -1083,6 +1083,7 @@ async function joinFamilyByCode(code) {
   const joinInput = document.getElementById('joinCodeInput');
   code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   if (!code) return;
+  if (code.length < 6) { alert('Codes are 6 characters. Check the code and try again.'); return; }
   if (families.some(f => f.code === code)) { alert('You are already in this family.'); return; }
   const id = 'fam_' + Date.now();
   const fam = { id, name: 'Joining…', members: [], isLive: true, code };
@@ -1094,8 +1095,20 @@ async function joinFamilyByCode(code) {
     await ensureYjs();
     startYjsSync(fam);
     renderTracker();
+    // Validate the code: if no host data arrives within 10 s, warn the user
+    setTimeout(() => {
+      const f = families.find(x => x.id === id);
+      if (f && f.name === 'Joining…') {
+        f.name = '⚠️ No host found';
+        saveFamilies();
+        renderTracker();
+      }
+    }, 10000);
   } catch(e) {
     console.warn('Y.js load failed:', e);
+    families = families.filter(f => f.id !== id);
+    saveFamilies();
+    renderTracker();
     alert('Could not connect to real-time sync. Check your internet connection.');
   }
 }
@@ -1106,7 +1119,7 @@ function startYjsSync(fam) {
   const doc = new Y.Doc();
   const idb = new yIndexeddb.IndexeddbPersistence(room, doc);
   const rtc = new yWebrtc.WebrtcProvider(room, doc, {
-    signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signal-eu.fly.dev']
+    signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signal-eu.fly.dev', 'wss://demos.yjs.dev/ws/']
   });
   ydocs[fam.code] = { doc, rtc, idb };
 
@@ -1115,10 +1128,22 @@ function startYjsSync(fam) {
   const yTasks    = doc.getMap('tasks');
   const yProgress = doc.getMap('progress');
 
-  // Once IndexedDB has loaded local history, push our own state into the doc
+  const apply = () => applyYjsToLocal(fam.id, doc);
+
+  // Observe each structure so ANY change (local or remote) triggers a re-apply
+  yMembers.observe(apply);
+  yTasks.observe(apply);
+  yProgress.observe(apply);
+  yMeta.observe(apply);
+
+  // When a new peer connects, immediately apply in case they sent a full state
+  rtc.awareness.on('change', apply);
+
+  // Once IndexedDB has loaded, push our own local state into the shared doc
   idb.on('synced', () => {
     doc.transact(() => {
-      if (!yMeta.get('name')) yMeta.set('name', fam.name);
+      if (fam.name && fam.name !== 'Joining…' && !yMeta.get('name'))
+        yMeta.set('name', fam.name);
       fam.members.forEach(name => {
         if (!yMembers.toArray().includes(name)) yMembers.push([name]);
         yTasks.set(name, getMemberTasks(name));
@@ -1129,40 +1154,41 @@ function startYjsSync(fam) {
         });
       });
     }, 'local');
-    applyYjsToLocal(fam.id, doc);
-  });
-
-  // React to updates from remote peers
-  doc.on('update', (_, origin) => {
-    if (origin !== 'local') applyYjsToLocal(fam.id, doc);
+    apply();
   });
 }
 
 function applyYjsToLocal(famId, doc) {
+  const fam = families.find(f => f.id === famId);
+  if (!fam) return;
+  const yMeta     = doc.getMap('meta');
+  const yMembers  = doc.getArray('members');
+  const yTasks    = doc.getMap('tasks');
+  const yProgress = doc.getMap('progress');
+
+  const remoteName = yMeta.get('name');
+  if (remoteName && remoteName !== 'Joining…') fam.name = remoteName;
+
+  let changed = false;
+  yMembers.toArray().forEach(name => {
+    if (!fam.members.includes(name)) { fam.members.push(name); changed = true; }
+  });
+  if (changed) saveFamilies();
+
   applyingRemote = true;
   try {
-    const fam = families.find(f => f.id === famId);
-    if (!fam) return;
-    const yMeta     = doc.getMap('meta');
-    const yMembers  = doc.getArray('members');
-    const yTasks    = doc.getMap('tasks');
-    const yProgress = doc.getMap('progress');
-    const remoteName = yMeta.get('name');
-    if (remoteName && remoteName !== 'Joining…') fam.name = remoteName;
-    yMembers.toArray().forEach(name => {
-      if (!fam.members.includes(name)) fam.members.push(name);
-    });
-    saveFamilies();
     fam.members.forEach(name => {
       const tasks = yTasks.get(name);
       if (tasks) saveMemberTasks(name, tasks);
       getMemberTasks(name).forEach(t => {
-        localStorage.setItem(memberItemKey(name, t),
-          yProgress.get(name + '::' + t) ? '1' : '0');
+        const val = yProgress.get(name + '::' + t);
+        if (val !== undefined)
+          localStorage.setItem(memberItemKey(name, t), val ? '1' : '0');
       });
     });
-    renderTracker();
   } finally { applyingRemote = false; }
+
+  renderTracker();
 }
 
 function pushProgressToYjs(fam, name) {
