@@ -1019,7 +1019,6 @@ async function showWeatherPage() {
     showState('weather');
     enterPage('weatherPage', 'page-enter-right');
     document.getElementById('weatherLocation').textContent = currentLocation?.name || '';
-    if (weatherData) { renderWeather(weatherData); return; }
     document.getElementById('weatherBody').innerHTML =
       '<div style="text-align:center;padding:40px 0;"><div class="spinner"></div>' +
       '<div style="color:var(--text-dim);font-size:0.88rem;margin-top:8px;">Fetching weather…</div></div>';
