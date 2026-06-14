@@ -49,6 +49,10 @@
     .weather-stat-icon { font-size: 1.8rem; margin-bottom: 6px; }
     .weather-stat-label { font-size: 0.7rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
     .weather-stat-value { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+    .unit-toggle-group { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .unit-btn { background: transparent; border: none; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; color: var(--text-dim); cursor: pointer; transition: background 0.15s, color 0.15s; font-family: inherit; }
+    .unit-btn.active { background: var(--accent); color: #fff; }
+    .unit-btn:hover:not(.active) { background: var(--surface2); }
 
     .search-section { padding: 28px 24px 0; max-width: 800px; margin: 0 auto; }
     .search-section label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
@@ -417,9 +421,25 @@
 <!-- Weather page -->
 <div id="weatherPage" class="hidden" style="max-width:680px; margin:0 auto; padding:20px 24px;">
   <div class="card">
-    <div class="card-header">
-      <span class="card-title">⛅ Current Weather</span>
-      <span id="weatherLocation" style="font-size:0.72rem; color:var(--text-dim);"></span>
+    <div class="card-header" style="flex-direction:column; align-items:stretch; gap:10px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <span class="card-title">⛅ Current Weather</span>
+        <span id="weatherLocation" style="font-size:0.72rem; color:var(--text-dim);"></span>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <div class="unit-toggle-group">
+          <button class="unit-btn active" data-unit-type="temp" data-unit-val="C" onclick="setWeatherUnit('temp','C')">°C</button>
+          <button class="unit-btn" data-unit-type="temp" data-unit-val="F" onclick="setWeatherUnit('temp','F')">°F</button>
+        </div>
+        <div class="unit-toggle-group">
+          <button class="unit-btn active" data-unit-type="wind" data-unit-val="mph" onclick="setWeatherUnit('wind','mph')">mph</button>
+          <button class="unit-btn" data-unit-type="wind" data-unit-val="kmh" onclick="setWeatherUnit('wind','kmh')">km/h</button>
+        </div>
+        <div class="unit-toggle-group">
+          <button class="unit-btn active" data-unit-type="precip" data-unit-val="in" onclick="setWeatherUnit('precip','in')">in</button>
+          <button class="unit-btn" data-unit-type="precip" data-unit-val="cm" onclick="setWeatherUnit('precip','cm')">cm</button>
+        </div>
+      </div>
     </div>
     <div class="card-body" id="weatherBody"></div>
   </div>

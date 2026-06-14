@@ -966,6 +966,7 @@ function removeMemberFromFamily(famId, name) {
 
 // ── Weather ───────────────────────────────────────────────────────────────────
 let weatherData = null;
+let weatherUnits = { temp: 'C', wind: 'mph', precip: 'in' };
 
 const WMO_ICON = code =>
   code === 0 ? '☀️' : code <= 3 ? '⛅' : code <= 48 ? '🌫️' :
@@ -988,30 +989,52 @@ async function fetchWeather(lat, lon) {
 }
 
 function renderWeather(data) {
-  const temp   = Math.round(data.temperature_2m);
-  const feels  = Math.round(data.apparent_temperature);
-  const wind   = Math.round(data.wind_speed_10m);
-  const precip = data.precipitation.toFixed(2);
-  const code   = data.weather_code;
+  if (!data) return;
+  const code = data.weather_code;
+
+  // API always returns °C, mph, inches — convert at render time
+  const rawTemp   = data.temperature_2m;
+  const rawFeels  = data.apparent_temperature;
+  const rawWind   = data.wind_speed_10m;
+  const rawPrecip = data.precipitation;
+
+  const tempVal  = weatherUnits.temp === 'C' ? Math.round(rawTemp)  : Math.round(rawTemp  * 9/5 + 32);
+  const feelsVal = weatherUnits.temp === 'C' ? Math.round(rawFeels) : Math.round(rawFeels * 9/5 + 32);
+  const tempUnit = weatherUnits.temp === 'C' ? '°C' : '°F';
+
+  const windVal  = weatherUnits.wind === 'mph' ? Math.round(rawWind) : Math.round(rawWind * 1.60934);
+  const windUnit = weatherUnits.wind === 'mph' ? 'mph' : 'km/h';
+
+  const precipVal  = weatherUnits.precip === 'in' ? rawPrecip.toFixed(2) : (rawPrecip * 2.54).toFixed(2);
+  const precipUnit = weatherUnits.precip === 'in' ? 'in' : 'cm';
+
   document.getElementById('weatherBody').innerHTML = `
     <div style="text-align:center; padding:28px 0 18px;">
       <div style="font-size:4.5rem; line-height:1; margin-bottom:10px;">${WMO_ICON(code)}</div>
       <div style="font-size:0.9rem; color:var(--text-dim); margin-bottom:10px; font-weight:600; letter-spacing:0.03em;">${WMO_DESC(code)}</div>
-      <div style="font-size:4rem; font-weight:700; color:var(--accent); line-height:1;">${temp}°C</div>
-      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">Feels like <strong style="color:var(--text);">${feels}°C</strong></div>
+      <div style="font-size:4rem; font-weight:700; color:var(--accent); line-height:1;">${tempVal}${tempUnit}</div>
+      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">Feels like <strong style="color:var(--text);">${feelsVal}${tempUnit}</strong></div>
     </div>
     <div class="weather-grid">
       <div class="weather-stat-card">
         <div class="weather-stat-icon">💨</div>
         <div class="weather-stat-label">Wind Speed</div>
-        <div class="weather-stat-value">${wind} <span style="font-size:0.9rem;color:var(--text-dim);">mph</span></div>
+        <div class="weather-stat-value">${windVal} <span style="font-size:0.9rem;color:var(--text-dim);">${windUnit}</span></div>
       </div>
       <div class="weather-stat-card">
         <div class="weather-stat-icon">🌧️</div>
         <div class="weather-stat-label">Precipitation</div>
-        <div class="weather-stat-value">${precip} <span style="font-size:0.9rem;color:var(--text-dim);">in</span></div>
+        <div class="weather-stat-value">${precipVal} <span style="font-size:0.9rem;color:var(--text-dim);">${precipUnit}</span></div>
       </div>
     </div>`;
+}
+
+function setWeatherUnit(type, val) {
+  weatherUnits[type] = val;
+  document.querySelectorAll(`.unit-btn[data-unit-type="${type}"]`).forEach(b => {
+    b.classList.toggle('active', b.dataset.unitVal === val);
+  });
+  if (weatherData) renderWeather(weatherData);
 }
 
 async function showWeatherPage() {
