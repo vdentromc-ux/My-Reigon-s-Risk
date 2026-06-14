@@ -295,8 +295,7 @@ function analyzeRisks(earthquakes, naturalEvents, alerts, years = analysisYears)
     else                                                add('severe_weather', 3);
   });
 
-  // Ensure at least a baseline so the list is never empty
-  ['earthquake', 'severe_weather', 'wildfire'].forEach(t => { if (!scores[t]) scores[t] = 1; });
+  if (!Object.keys(scores).length) return [];
 
   const maxScore = Math.max(...Object.values(scores));
   return Object.entries(scores)
@@ -498,6 +497,11 @@ function renderAlerts(alerts) {
 // ── Render: Risks ──────────────────────────────────────────────────────────────
 function renderRisks(risks) {
   currentRisks = risks;
+  if (!risks.length) {
+    document.getElementById('risksBody').innerHTML =
+      '<div style="font-size:0.83rem;color:var(--text-dim);padding:8px 0;">No significant events detected in this region for the selected window.</div>';
+    return;
+  }
   document.getElementById('risksBody').innerHTML = risks.map(r => {
     const color = EVENT_COLORS[r.type] || '#8892a4';
     return `
