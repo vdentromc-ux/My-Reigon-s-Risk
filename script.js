@@ -45,6 +45,7 @@ let currentRisks = [];
 let families = JSON.parse(localStorage.getItem('mrr_families') || '[]');
 let analysisYears = 5;
 let cachedYears = 5;
+let analysisLabel = '5-yr';
 let storedEarthquakes = [], storedNaturalEvents = [], storedAlerts = [];
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -55,21 +56,73 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R_EARTH * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+let currentState = 'empty';
+
 function showState(which) {
-  ['emptyState','loadingState','errorState','mainContent','shareRow'].forEach(id => {
-    document.getElementById(id).classList.add('hidden');
+  currentState = which;
+  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage'].forEach(id => {
+    document.getElementById(id)?.classList.add('hidden');
   });
+  const backBtn = document.getElementById('backBtn');
+  const checklistBtn = document.getElementById('checklistBtn');
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('shareRow').classList.remove('hidden');
-    document.getElementById('backBtn').classList.remove('hidden');
+    backBtn.textContent = '← Back to Menu';
+    backBtn.classList.remove('hidden');
+    checklistBtn.classList.remove('hidden');
+  } else if (which === 'checklist') {
+    document.getElementById('checklistPage').classList.remove('hidden');
+    backBtn.textContent = '← Results';
+    backBtn.classList.remove('hidden');
+    checklistBtn.classList.add('hidden');
   } else {
     document.getElementById(which + 'State').classList.remove('hidden');
-    document.getElementById('backBtn').classList.add('hidden');
+    backBtn.classList.add('hidden');
+    checklistBtn.classList.add('hidden');
   }
 }
 
+function fadeOutThen(ids, callback) {
+  const els = ids.map(id => document.getElementById(id)).filter(el => el && !el.classList.contains('hidden'));
+  let pending = els.length;
+  if (!pending) { callback(); return; }
+  els.forEach(el => {
+    el.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(6px)';
+    el.addEventListener('transitionend', function h() {
+      el.removeEventListener('transitionend', h);
+      el.style.transition = '';
+      el.style.opacity = '';
+      el.style.transform = '';
+      if (--pending === 0) callback();
+    });
+  });
+}
+
+function enterPage(id, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add(cls);
+  el.addEventListener('animationend', () => el.classList.remove(cls), { once: true });
+}
+
+function showChecklistPage() {
+  fadeOutThen(['mainContent', 'shareRow'], () => {
+    showState('checklist');
+    enterPage('checklistPage', 'page-enter-right');
+  });
+}
+
 function backToMenu() {
+  if (currentState === 'checklist') {
+    fadeOutThen(['checklistPage'], () => {
+      showState('main');
+      enterPage('mainContent', 'page-enter-left');
+    });
+    return;
+  }
   const fadeTargets = ['mainContent', 'shareRow'].map(id => document.getElementById(id)).filter(el => !el.classList.contains('hidden'));
   let pending = fadeTargets.length;
 
@@ -385,14 +438,28 @@ function applyYears(n) {
   setAnalysisYears(n);
 }
 
+function applyDays(days) {
+  if (!currentLocation) return;
+  analysisYears = days / 365.25;
+  analysisLabel = days === 1 ? '1-day' : days === 7 ? '7-day' : '30-day';
+  document.querySelectorAll('.yr-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.period-btn').forEach(b =>
+    b.classList.toggle('active', +b.dataset.days === days));
+  const risks = analyzeRisks(storedEarthquakes, storedNaturalEvents, storedAlerts, analysisYears);
+  renderRisks(risks);
+  renderChecklist(risks);
+}
+
 async function setAnalysisYears(n) {
   n = Math.max(1, Math.min(20, Math.round(n)));
   if (!currentLocation) return;
   analysisYears = n;
+  analysisLabel = n + '-yr';
 
   // Sync input and preset buttons
   document.getElementById('yrInput').value = n;
   document.querySelectorAll('.yr-btn').forEach(b => b.classList.toggle('active', +b.dataset.yr === n));
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
 
   // Re-fetch if the requested window exceeds what we have cached
   if (n > cachedYears) {
@@ -437,7 +504,7 @@ function renderRisks(risks) {
       <div class="risk-rank" style="background:${color}22; color:${color}">${r.rank}</div>
       <div class="risk-info">
         <div class="risk-name" style="color:${color}">${r.icon} ${r.name}</div>
-        <div class="risk-desc">${r.score} weighted event${r.score !== 1 ? 's' : ''} · ${analysisYears}-yr window</div>
+        <div class="risk-desc">${r.score} weighted event${r.score !== 1 ? 's' : ''} · ${analysisLabel} window</div>
       </div>
       <div class="risk-bar-wrap">
         <div class="risk-bar" style="width:${r.pct}%; background:${color}"></div>
@@ -1005,6 +1072,7 @@ async function loadRegion(lat, lon, name) {
 
     cachedYears = YEARS_BACK;
     analysisYears = YEARS_BACK;
+    analysisLabel = YEARS_BACK + '-yr';
 
     showState('main');
     initMap(lat, lon);
@@ -1013,6 +1081,7 @@ async function loadRegion(lat, lon, name) {
     // Reset picker to default on each new search
     document.getElementById('yrInput').value = YEARS_BACK;
     document.querySelectorAll('.yr-btn').forEach(b => b.classList.toggle('active', +b.dataset.yr === YEARS_BACK));
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('yrControl').dataset.loaded = '1';
 
     const risks = analyzeRisks(earthquakes, naturalEvents, alerts);
