@@ -43,6 +43,15 @@ let playInterval = null;
 let currentLocation = null;
 let currentRisks = [];
 let families = JSON.parse(localStorage.getItem('mrr_families') || '[]');
+
+// Keep families in sync across tabs of the same browser
+window.addEventListener('storage', e => {
+  if (e.key !== 'mrr_families') return;
+  families = JSON.parse(e.newValue || '[]');
+  renderTracker();
+  families.filter(f => f.isLive && f.code && !ydocs[f.code])
+    .forEach(f => ensureYjs().then(() => startYjsSync(f)).catch(() => {}));
+});
 let analysisYears = 5;
 let cachedYears = 5;
 let analysisLabel = '5-yr';
@@ -1105,7 +1114,25 @@ async function joinFamilyByCode(code) {
   code = (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   if (!code) return;
   if (code.length < 6) { alert('Codes are 6 characters. Check the code and try again.'); return; }
+
+  // Re-read localStorage so we catch families created in other tabs of this browser
+  const fresh = JSON.parse(localStorage.getItem('mrr_families') || '[]');
+  const localMatch = fresh.find(f => f.code === code);
+  if (localMatch) {
+    if (families.some(f => f.id === localMatch.id)) { alert('You are already in this family.'); return; }
+    // Family exists in this browser (another tab is the host) — adopt it
+    families = fresh;
+    if (joinInput) joinInput.value = '';
+    renderTracker();
+    if (localMatch.isLive) {
+      try { await ensureYjs(); startYjsSync(localMatch); renderTracker(); } catch(e) {}
+    }
+    return;
+  }
+
   if (families.some(f => f.code === code)) { alert('You are already in this family.'); return; }
+
+  // Cross-device join: create placeholder and wait for Y.js sync to deliver host data
   const id = 'fam_' + Date.now();
   const fam = { id, name: 'Joining…', members: [], isLive: true, code };
   families.push(fam);
@@ -1116,7 +1143,7 @@ async function joinFamilyByCode(code) {
     await ensureYjs();
     startYjsSync(fam);
     renderTracker();
-    // Validate the code: if no host data arrives within 10 s, remove and alert
+    // If no host data arrives within 20 s, the code doesn't exist on any device
     setTimeout(() => {
       const f = families.find(x => x.id === id);
       if (f && f.name === 'Joining…') {
@@ -1129,7 +1156,7 @@ async function joinFamilyByCode(code) {
         renderTracker();
         alert('Error: Family Not Found');
       }
-    }, 10000);
+    }, 20000);
   } catch(e) {
     console.warn('Y.js load failed:', e);
     families = families.filter(f => f.id !== id);
@@ -1191,10 +1218,13 @@ function applyYjsToLocal(famId, doc) {
   const yTasks    = doc.getMap('tasks');
   const yProgress = doc.getMap('progress');
 
-  const remoteName = yMeta.get('name');
-  if (remoteName && remoteName !== 'Joining…') fam.name = remoteName;
-
   let changed = false;
+  const remoteName = yMeta.get('name');
+  if (remoteName && remoteName !== 'Joining…' && fam.name !== remoteName) {
+    fam.name = remoteName;
+    changed = true;
+  }
+
   yMembers.toArray().forEach(name => {
     if (!fam.members.includes(name)) { fam.members.push(name); changed = true; }
   });
