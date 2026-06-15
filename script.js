@@ -338,18 +338,20 @@ const TRANSLATIONS = {
 
 function t(key) {
   const lang = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
-  return (key in lang ? lang[key] : TRANSLATIONS.en[key]) ?? key;
+  if (key in lang) return lang[key];
+  if (key in TRANSLATIONS.en) return TRANSLATIONS.en[key];
+  return undefined;
 }
 
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.dataset.i18n);
+    const v = t(el.dataset.i18n); if (v !== undefined) el.textContent = v;
   });
   document.querySelectorAll('[data-i18n-html]').forEach(el => {
-    el.innerHTML = t(el.dataset.i18nHtml);
+    const v = t(el.dataset.i18nHtml); if (v !== undefined) el.innerHTML = v;
   });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
-    el.placeholder = t(el.dataset.i18nPh);
+    const v = t(el.dataset.i18nPh); if (v !== undefined) el.placeholder = v;
   });
   const backBtn = document.getElementById('backBtn');
   if (backBtn && !backBtn.classList.contains('hidden')) {
