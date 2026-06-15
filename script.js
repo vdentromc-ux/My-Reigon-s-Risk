@@ -57,6 +57,331 @@ let cachedYears = 5;
 let analysisLabel = '5-yr';
 let storedEarthquakes = [], storedNaturalEvents = [], storedAlerts = [];
 
+// ── Internationalisation ───────────────────────────────────────────────────────
+let currentLang = localStorage.getItem('mrr_lang') || 'en';
+
+const TRANSLATIONS = {
+  en: {
+    lang_name:'EN', header_subtitle:'Real-time disaster awareness & preparedness checklist',
+    search_label:'Search your region', search_placeholder:'City, state, or zip code…',
+    search_btn:'Search', geo_btn:'📍 Use My Location',
+    empty_title:'Search your region to get started',
+    empty_msg:'Enter a city or use your location to see recent disaster events,<br>a risk analysis, and a personalized preparedness checklist.',
+    loading_title:'Fetching regional data…',
+    loading_msg:'Querying USGS earthquakes, NASA EONET natural events,<br>and NWS active weather alerts',
+    map_title:'🗺️ Event Map', time_machine:'⏱ Time Machine', all_time:'All Time',
+    play:'▶ Play', pause:'⏸ Pause',
+    stat_quakes:'Quakes', stat_fires:'Wildfires', stat_floods:'Floods', stat_alerts:'Alerts',
+    risks_title:'⚠️ Top Regional Risks',
+    day_btn:'Day', week_btn:'Week', month_btn:'Month', yr_unit:'yr',
+    tracker_title:'👨‍👩‍👧 Household Tracker',
+    family_placeholder:'New family name…', add_family_btn:'+ Family',
+    join_placeholder:'Enter code to join a family…', join_btn:'Join',
+    weather_nav_btn:'⛅ Weather', checklist_nav_btn:'✅ Preparedness Checklist',
+    back_menu:'← Back to Menu', back_results:'← Results',
+    checklist_title:'✅ Preparedness Checklist',
+    checklist_subtitle:'Tailored to your regional risks · check items off as you build your kit',
+    overall_prep:'Overall Preparedness',
+    weather_title:'⛅ Current Weather', wind_speed:'Wind Speed', precipitation:'Precipitation', feels_like:'Feels like',
+    share_btn:'🔗 Share', save_report_btn:'💾 Save Report',
+    no_events:'No significant events detected in this region for the selected window.',
+    weighted_event:'weighted event', weighted_events:'weighted events',
+    conf_high:'High confidence', conf_med:'Medium confidence', conf_low:'Low confidence',
+    universal_name:'Universal Essentials', universal_reason:'Applies to every emergency type', reset_btn:'↺ Reset',
+    risk_earthquake:'Earthquake', risk_wildfire:'Wildfire', risk_flood:'Flood', risk_volcano:'Volcano',
+    risk_storm:'Severe Storm', risk_drought:'Drought', risk_tornado:'Tornado', risk_hurricane:'Hurricane',
+    risk_winter_storm:'Winter Storm', risk_extreme_heat:'Extreme Heat', risk_severe_weather:'Severe Weather',
+    wmo_0:'Clear Sky', wmo_1:'Mostly Clear', wmo_2:'Partly Cloudy', wmo_3:'Overcast',
+    wmo_fog:'Foggy', wmo_drizzle:'Drizzle', wmo_rain:'Rain', wmo_snow:'Snow',
+    wmo_rain_showers:'Rain Showers', wmo_snow_showers:'Snow Showers', wmo_thunderstorm:'Thunderstorm',
+    ck_earthquake_reason:'Based on seismic activity detected in your area',
+    ck_wildfire_reason:'Wildfire events detected in your region',
+    ck_flood_reason:'Flood events detected near your region',
+    ck_volcano_reason:'Volcanic activity detected near your region',
+    ck_winter_storm_reason:'Winter storm risk or alerts detected',
+    ck_hurricane_reason:'Hurricane risk or alerts detected',
+    ck_tornado_reason:'Tornado risk or alerts detected',
+    ck_extreme_heat_reason:'Extreme heat alerts active in region',
+    ck_storm_reason:'Storm events detected in region',
+    ck_drought_reason:'Drought conditions detected in region',
+    ck_severe_weather_reason:'General severe weather risk for this region',
+  },
+  es: {
+    lang_name:'ES', header_subtitle:'Concienciación sobre desastres y lista de preparación en tiempo real',
+    search_label:'Busca tu región', search_placeholder:'Ciudad, estado o código postal…',
+    search_btn:'Buscar', geo_btn:'📍 Usar mi ubicación',
+    empty_title:'Busca tu región para comenzar',
+    empty_msg:'Ingresa una ciudad o usa tu ubicación para ver eventos recientes,<br>un análisis de riesgos y una lista de preparación personalizada.',
+    loading_title:'Obteniendo datos regionales…',
+    loading_msg:'Consultando sismos USGS, eventos naturales NASA EONET<br>y alertas meteorológicas NWS',
+    map_title:'🗺️ Mapa de Eventos', time_machine:'⏱ Máquina del Tiempo', all_time:'Todo el tiempo',
+    play:'▶ Reproducir', pause:'⏸ Pausar',
+    stat_quakes:'Sismos', stat_fires:'Incendios', stat_floods:'Inundaciones', stat_alerts:'Alertas',
+    risks_title:'⚠️ Principales Riesgos Regionales',
+    day_btn:'Día', week_btn:'Semana', month_btn:'Mes', yr_unit:'año',
+    tracker_title:'👨‍👩‍👧 Rastreador del Hogar',
+    family_placeholder:'Nombre de familia nuevo…', add_family_btn:'+ Familia',
+    join_placeholder:'Ingresa un código para unirte…', join_btn:'Unirse',
+    weather_nav_btn:'⛅ Clima', checklist_nav_btn:'✅ Lista de Preparación',
+    back_menu:'← Volver al Menú', back_results:'← Resultados',
+    checklist_title:'✅ Lista de Preparación',
+    checklist_subtitle:'Adaptada a tus riesgos regionales · marca los elementos mientras preparas tu kit',
+    overall_prep:'Preparación General',
+    weather_title:'⛅ Clima Actual', wind_speed:'Velocidad del Viento', precipitation:'Precipitación', feels_like:'Sensación térmica',
+    share_btn:'🔗 Compartir', save_report_btn:'💾 Guardar Informe',
+    no_events:'No se detectaron eventos significativos en esta región para el período seleccionado.',
+    weighted_event:'evento ponderado', weighted_events:'eventos ponderados',
+    conf_high:'Alta confianza', conf_med:'Confianza media', conf_low:'Baja confianza',
+    universal_name:'Elementos Universales', universal_reason:'Aplica a todo tipo de emergencia', reset_btn:'↺ Restablecer',
+    risk_earthquake:'Terremoto', risk_wildfire:'Incendio Forestal', risk_flood:'Inundación', risk_volcano:'Volcán',
+    risk_storm:'Tormenta Severa', risk_drought:'Sequía', risk_tornado:'Tornado', risk_hurricane:'Huracán',
+    risk_winter_storm:'Tormenta de Invierno', risk_extreme_heat:'Calor Extremo', risk_severe_weather:'Clima Severo',
+    wmo_0:'Cielo Despejado', wmo_1:'Mayormente Despejado', wmo_2:'Parcialmente Nublado', wmo_3:'Nublado',
+    wmo_fog:'Niebla', wmo_drizzle:'Llovizna', wmo_rain:'Lluvia', wmo_snow:'Nieve',
+    wmo_rain_showers:'Chubascos', wmo_snow_showers:'Nevadas', wmo_thunderstorm:'Tormenta Eléctrica',
+    ck_earthquake_reason:'Basado en actividad sísmica detectada en su área',
+    ck_wildfire_reason:'Incendios forestales detectados en su región',
+    ck_flood_reason:'Inundaciones detectadas cerca de su región',
+    ck_volcano_reason:'Actividad volcánica detectada cerca de su región',
+    ck_winter_storm_reason:'Riesgo o alertas de tormenta de invierno detectados',
+    ck_hurricane_reason:'Riesgo o alertas de huracán detectados',
+    ck_tornado_reason:'Riesgo o alertas de tornado detectados',
+    ck_extreme_heat_reason:'Alertas de calor extremo activas en la región',
+    ck_storm_reason:'Eventos de tormenta detectados en la región',
+    ck_drought_reason:'Condiciones de sequía detectadas en la región',
+    ck_severe_weather_reason:'Riesgo general de clima severo para esta región',
+    ck_earthquake_items:['Agua — 1 galón/persona/día por 3+ días','Comida no perecedera (suministro de 3 días)','Linterna + pilas de repuesto','Botiquín de primeros auxilios con manual','Llave o alicates para cerrar servicios','Mascarillas N95','Zapatos resistentes para cada miembro del hogar','Lista de contactos de emergencia (impresa)','Copias de documentos en bolsa impermeable','Conocer los cierres de gas/agua del hogar','Anclar muebles pesados a las paredes','Identificar lugares seguros en cada habitación (bajo mesas resistentes)'],
+    ck_wildfire_items:['Mascarillas N95 contra inhalación de humo','Bolsa de 72 horas lista para llevar','Documentos importantes en contenedor ignífugo','Cargador portátil + cables','Suministro de medicamentos para 30 días si es posible','Conocer 2+ rutas de evacuación desde casa','Registrarse para alertas de emergencia locales','Extintor ABC (10 lb)','Despejar vegetación a 9+ metros de la estructura','Efectivo en billetes pequeños','Kit para mascotas (comida, agua, registros veterinarios, transportín)','Mapa en papel de su área'],
+    ck_flood_items:['Bolsa impermeable para documentos vitales','Agua extra (las inundaciones contaminan el suministro)','Sacos de arena o barreras contra inundaciones','Radio meteorológica de batería/manivela','Conocer su zona de inundación FEMA','Elevar paneles eléctricos si es propenso a inundaciones','Bomba de sumidero con batería de respaldo','Botas de goma + guantes impermeables','Verificar seguro contra inundaciones (NFIP)','Lona impermeable (mín. 8×10 pies)','Contactos de emergencia para corte de servicios','Plástico + cinta adhesiva'],
+    ck_volcano_items:['Gafas protectoras contra ceniza','Mascarillas N95+ (la ceniza es un peligro respiratorio grave)','Ropa de manga larga + pantalones largos','Conocer las zonas de evacuación de flujos de lava locales','Suscribirse a notificaciones de alertas volcánicas','Plástico para sellar ventilaciones de ceniza','Suministro de agua de 3 días (la ceniza contamina el agua)','Mascarillas para mascotas','Filtros de aire HVAC extra'],
+    ck_winter_storm_items:['Sal vial o arena para caminos','Pala para nieve + raspador de hielo para vehículo','Ropa de abrigo (lana/sintética — no algodón)','Kit de emergencia para auto (manta, pala, cables puente)','Fuente de calor de respaldo (sin monóxido de carbono)','Comida + agua para 3 días en caso de cierre de vías','Cobijas + bolsas de dormir extra','Aislar tuberías expuestas','Conocer los primeros auxilios para hipotermia','Verificar el estado de vecinos mayores'],
+    ck_hurricane_items:['Suministro de comida + agua para 7 días (1 galón/persona/día)','Estación de energía portátil o generador','Protectores para huracán o madera para ventanas','Conocer su zona de marejada ciclónica + refugio','Tanque lleno antes de la temporada de tormentas','Podar árboles cerca de la estructura','Radio meteorológica NOAA (a pilas)','Efectivo de emergencia','Almacenamiento impermeable de documentos','Botiquín de primeros auxilios + medicamentos'],
+    ck_tornado_items:['Habitación de refugio designada (interior, piso más bajo, sin ventanas)','Casco para protegerse de escombros','Zapatos cerrados resistentes','Radio NOAA o aplicación de alertas confiable','Practicar un simulacro de tornado familiar','Botiquín de primeros auxilios','Batería de respaldo para teléfono','Conocer la diferencia entre vigilancia y advertencia de tornado'],
+    ck_extreme_heat_items:['Ventiladores, AC portátil o centros de enfriamiento locales','Bebidas electrolíticas / sales de rehidratación oral','Ropa holgada de colores claros','Cortinas opacas para reducir el calor interior','Reconocer signos y tratamiento del golpe de calor','Revisar regularmente a personas mayores y niños pequeños','Nunca dejar personas o mascotas en vehículos estacionados','Protector solar FPS 30+','Planificar actividades al aire libre para temprano en la mañana'],
+    ck_storm_items:['Radio meteorológica a pilas','Protectores de sobretensión para electrónicos','Bolsa de 72 horas','Botiquín de primeros auxilios','Suministro de comida + agua para 3 días','Linterna + pilas extra','Conocer los refugios locales','Cargador portátil para teléfono'],
+    ck_drought_items:['Plan de conservación de agua (accesorios de bajo flujo)','Sistema de recolección de agua de lluvia','Paisajismo resistente a la sequía','Conocer las restricciones de agua locales','Contenedores grandes de almacenamiento de agua','Paisajismo inteligente contra incendios (la sequía aumenta el riesgo)'],
+    ck_severe_weather_items:['Radio meteorológica a pilas','Bolsa de emergencia de 72 horas','Botiquín de primeros auxilios','Copias de respaldo de documentos importantes','Conocer los refugios de emergencia locales','Suministro de comida + agua para 3 días','Linterna + pilas','Cargador portátil para teléfono'],
+    ck_universal_items:['Botiquín de primeros auxilios con manual impreso','Copias de ID, seguro y registros médicos','Bolsa de 72 horas por miembro del hogar','Lista de contactos de emergencia impresa','Radio de batería o de manivela','Cargador portátil para teléfono'],
+  },
+  fr: {
+    lang_name:'FR', header_subtitle:'Sensibilisation aux catastrophes et liste de préparation en temps réel',
+    search_label:'Rechercher votre région', search_placeholder:'Ville, état ou code postal…',
+    search_btn:'Rechercher', geo_btn:'📍 Utiliser ma position',
+    empty_title:'Recherchez votre région pour commencer',
+    empty_msg:'Entrez une ville ou utilisez votre position pour voir les événements récents,<br>une analyse des risques et une liste de préparation personnalisée.',
+    loading_title:'Récupération des données régionales…',
+    loading_msg:'Interrogation des séismes USGS, événements NASA EONET<br>et alertes météo NWS',
+    map_title:'🗺️ Carte des Événements', time_machine:'⏱ Machine à Remonter le Temps', all_time:'Toute la période',
+    play:'▶ Lire', pause:'⏸ Pause',
+    stat_quakes:'Séismes', stat_fires:'Incendies', stat_floods:'Inondations', stat_alerts:'Alertes',
+    risks_title:'⚠️ Principaux Risques Régionaux',
+    day_btn:'Jour', week_btn:'Semaine', month_btn:'Mois', yr_unit:'an',
+    tracker_title:'👨‍👩‍👧 Suivi du Ménage',
+    family_placeholder:'Nom de la nouvelle famille…', add_family_btn:'+ Famille',
+    join_placeholder:'Entrez un code pour rejoindre…', join_btn:'Rejoindre',
+    weather_nav_btn:'⛅ Météo', checklist_nav_btn:'✅ Liste de Préparation',
+    back_menu:'← Retour au Menu', back_results:'← Résultats',
+    checklist_title:'✅ Liste de Préparation',
+    checklist_subtitle:'Adaptée à vos risques régionaux · cochez les éléments au fur et à mesure',
+    overall_prep:'Préparation Globale',
+    weather_title:'⛅ Météo Actuelle', wind_speed:'Vitesse du Vent', precipitation:'Précipitations', feels_like:'Ressenti',
+    share_btn:'🔗 Partager', save_report_btn:'💾 Enregistrer le Rapport',
+    no_events:'Aucun événement significatif détecté dans cette région pour la période sélectionnée.',
+    weighted_event:'événement pondéré', weighted_events:'événements pondérés',
+    conf_high:'Haute confiance', conf_med:'Confiance moyenne', conf_low:'Faible confiance',
+    universal_name:'Éléments Universels', universal_reason:"S'applique à tout type d'urgence", reset_btn:'↺ Réinitialiser',
+    risk_earthquake:'Séisme', risk_wildfire:'Incendie de Forêt', risk_flood:'Inondation', risk_volcano:'Volcan',
+    risk_storm:'Tempête Sévère', risk_drought:'Sécheresse', risk_tornado:'Tornade', risk_hurricane:'Ouragan',
+    risk_winter_storm:'Tempête Hivernale', risk_extreme_heat:'Chaleur Extrême', risk_severe_weather:'Météo Sévère',
+    wmo_0:'Ciel Dégagé', wmo_1:'Principalement Dégagé', wmo_2:'Partiellement Nuageux', wmo_3:'Couvert',
+    wmo_fog:'Brouillard', wmo_drizzle:'Bruine', wmo_rain:'Pluie', wmo_snow:'Neige',
+    wmo_rain_showers:'Averses de Pluie', wmo_snow_showers:'Averses de Neige', wmo_thunderstorm:'Orage',
+    ck_earthquake_reason:"Basé sur l'activité sismique détectée dans votre zone",
+    ck_wildfire_reason:'Incendies de forêt détectés dans votre région',
+    ck_flood_reason:'Inondations détectées près de votre région',
+    ck_volcano_reason:'Activité volcanique détectée près de votre région',
+    ck_winter_storm_reason:'Risque de tempête hivernale ou alertes détectés',
+    ck_hurricane_reason:"Risque d'ouragan ou alertes détectés",
+    ck_tornado_reason:'Risque de tornade ou alertes détectés',
+    ck_extreme_heat_reason:'Alertes de chaleur extrême actives dans la région',
+    ck_storm_reason:'Événements orageux détectés dans la région',
+    ck_drought_reason:'Conditions de sécheresse détectées dans la région',
+    ck_severe_weather_reason:'Risque général de météo sévère pour cette région',
+    ck_earthquake_items:["Eau — 1 gallon/personne/jour pendant 3+ jours","Nourriture non périssable (provision de 3 jours)","Lampe de poche + piles de rechange","Trousse de premiers secours avec manuel","Clé ou pince pour couper les services","Masques anti-poussière N95","Chaussures robustes pour chaque membre du ménage","Liste de contacts d'urgence (imprimée)","Copies de documents dans un sac imperméable","Connaître les vannes de gaz/eau de votre domicile","Fixer les meubles lourds aux murs","Identifier les zones sûres dans chaque pièce (sous des tables solides)"],
+    ck_wildfire_items:["Masques N95 contre l'inhalation de fumée","Sac de 72h prêt à emporter","Documents importants dans un conteneur ignifuge","Chargeur de téléphone portable + câbles","Provision de médicaments pour 30 jours si possible","Connaître 2+ itinéraires d'évacuation depuis chez soi","S'inscrire aux alertes d'urgence locales","Extincteur ABC (10 lb)","Débroussailler à 9+ m de la structure","Espèces en petites coupures","Kit pour animaux de compagnie (nourriture, eau, dossiers vétérinaires, cage)","Carte papier de votre zone"],
+    ck_flood_items:["Sac imperméable pour documents vitaux","Eau supplémentaire (les inondations contaminent l'eau)","Sacs de sable ou barrières contre les inondations","Radio météo à piles/manivelle","Connaître votre zone inondable FEMA","Suréléver les tableaux électriques si zone inondable","Pompe de puisard avec batterie de secours","Bottes en caoutchouc + gants imperméables","Vérifier l'assurance inondation (NFIP)","Bâche imperméable (min 2,4×3 m)","Contacts d'urgence pour coupure des services","Feuille plastique + ruban adhésif"],
+    ck_volcano_items:["Lunettes de protection contre les cendres","Masques N95+ (les cendres sont un risque respiratoire grave)","Vêtements à manches longues + pantalons longs","Connaître les zones d'évacuation des coulées de lave locales","S'inscrire aux notifications d'alerte volcanique","Feuille plastique pour sceller les bouches d'air contre les cendres","Provision d'eau de 3 jours (les cendres contaminent l'eau)","Masques pour animaux de compagnie","Filtres d'air HVAC supplémentaires"],
+    ck_winter_storm_items:["Sel de déneigement ou sable pour les allées","Pelle à neige + grattoir de véhicule","Couches chaudes (laine/synthétique — pas de coton)","Kit d'urgence pour voiture (couverture, pelle, câbles de démarrage)","Source de chaleur de secours (sans monoxyde de carbone)","Nourriture + eau pour 3 jours en cas de fermeture des routes","Couvertures + sacs de couchage supplémentaires","Isoler les tuyaux exposés","Connaître les premiers secours pour l'hypothermie","Vérifier l'état des voisins âgés"],
+    ck_hurricane_items:["Provision de nourriture + eau pour 7 jours (1 gallon/personne/jour)","Station d'énergie portable ou générateur","Volets anti-ouragan ou contreplaqué pour les fenêtres","Connaître votre zone de submersion + abri","Plein d'essence avant la saison des tempêtes","Tailler les arbres près de la structure","Radio météo NOAA (à piles)","Espèces d'urgence","Stockage imperméable de documents","Trousse de premiers secours + médicaments"],
+    ck_tornado_items:["Pièce refuge désignée (intérieure, étage le plus bas, sans fenêtres)","Casque pour se protéger des débris","Chaussures fermées robustes","Radio NOAA ou application d'alertes fiable","Pratiquer un exercice tornado familial","Trousse de premiers secours","Batterie de secours pour téléphone","Connaître la différence entre veille et alerte tornado"],
+    ck_extreme_heat_items:["Ventilateurs, climatiseur portable ou centres de rafraîchissement locaux","Boissons électrolytiques / sels de réhydratation orale","Vêtements amples de couleur claire","Rideaux occultants pour réduire la chaleur intérieure","Reconnaître les signes du coup de chaleur + traitement","Surveiller régulièrement les personnes âgées + les jeunes enfants","Ne jamais laisser des personnes ou des animaux dans des véhicules garés","Écran solaire SPF 30+","Planifier les activités en plein air tôt le matin"],
+    ck_storm_items:["Radio météo à piles","Parasurtenseurs pour les appareils électroniques","Sac de 72h","Trousse de premiers secours","Provision de nourriture + eau pour 3 jours","Lampe de poche + piles supplémentaires","Connaître les abris locaux","Chargeur de téléphone portable"],
+    ck_drought_items:["Plan de conservation de l'eau (robinets basse consommation)","Système de récupération des eaux de pluie","Aménagement paysager résistant à la sécheresse","Connaître les restrictions d'eau locales","Grands conteneurs de stockage d'eau","Aménagement paysager anti-incendie (la sécheresse augmente le risque)"],
+    ck_severe_weather_items:["Radio météo à piles","Sac d'urgence de 72h","Trousse de premiers secours","Copies de sauvegarde de documents importants","Connaître les abris d'urgence locaux","Provision de nourriture + eau pour 3 jours","Lampe de poche + piles","Chargeur de téléphone portable"],
+    ck_universal_items:["Trousse de premiers secours avec manuel imprimé","Copies de pièce d'identité, assurance et dossiers médicaux","Sac de 72h par membre du ménage","Liste de contacts d'urgence imprimée","Radio à piles ou à manivelle","Chargeur de téléphone portable"],
+  },
+  de: {
+    lang_name:'DE', header_subtitle:'Echtzeit-Katastrophenbewusstsein & Vorbereitungscheckliste',
+    search_label:'Ihre Region suchen', search_placeholder:'Stadt, Bundesland oder Postleitzahl…',
+    search_btn:'Suchen', geo_btn:'📍 Meinen Standort verwenden',
+    empty_title:'Suchen Sie Ihre Region, um zu beginnen',
+    empty_msg:'Geben Sie eine Stadt ein oder verwenden Sie Ihren Standort, um aktuelle Katastrophenereignisse,<br>eine Risikoanalyse und eine personalisierte Vorbereitungsliste zu sehen.',
+    loading_title:'Regionale Daten werden abgerufen…',
+    loading_msg:'Abfrage von USGS-Erdbeben, NASA EONET-Naturereignissen<br>und NWS-Wetterwarnungen',
+    map_title:'🗺️ Ereigniskarte', time_machine:'⏱ Zeitmaschine', all_time:'Gesamter Zeitraum',
+    play:'▶ Abspielen', pause:'⏸ Pause',
+    stat_quakes:'Erdbeben', stat_fires:'Waldbrände', stat_floods:'Überschwemmungen', stat_alerts:'Warnungen',
+    risks_title:'⚠️ Wichtigste Regionale Risiken',
+    day_btn:'Tag', week_btn:'Woche', month_btn:'Monat', yr_unit:'J.',
+    tracker_title:'👨‍👩‍👧 Haushalts-Tracker',
+    family_placeholder:'Neuer Familienname…', add_family_btn:'+ Familie',
+    join_placeholder:'Code eingeben, um beizutreten…', join_btn:'Beitreten',
+    weather_nav_btn:'⛅ Wetter', checklist_nav_btn:'✅ Vorbereitungs-Checkliste',
+    back_menu:'← Zurück zum Menü', back_results:'← Ergebnisse',
+    checklist_title:'✅ Vorbereitungs-Checkliste',
+    checklist_subtitle:'Auf Ihre regionalen Risiken zugeschnitten · Haken Sie Elemente ab, während Sie Ihr Kit zusammenstellen',
+    overall_prep:'Gesamtvorbereitung',
+    weather_title:'⛅ Aktuelles Wetter', wind_speed:'Windgeschwindigkeit', precipitation:'Niederschlag', feels_like:'Gefühlt wie',
+    share_btn:'🔗 Teilen', save_report_btn:'💾 Bericht Speichern',
+    no_events:'Keine bedeutenden Ereignisse in dieser Region für den gewählten Zeitraum erkannt.',
+    weighted_event:'gewichtetes Ereignis', weighted_events:'gewichtete Ereignisse',
+    conf_high:'Hohe Konfidenz', conf_med:'Mittlere Konfidenz', conf_low:'Niedrige Konfidenz',
+    universal_name:'Universelle Grundausstattung', universal_reason:'Gilt für jeden Notfalltyp', reset_btn:'↺ Zurücksetzen',
+    risk_earthquake:'Erdbeben', risk_wildfire:'Waldbrand', risk_flood:'Überschwemmung', risk_volcano:'Vulkan',
+    risk_storm:'Schwerer Sturm', risk_drought:'Dürre', risk_tornado:'Tornado', risk_hurricane:'Hurrikan',
+    risk_winter_storm:'Wintersturm', risk_extreme_heat:'Extreme Hitze', risk_severe_weather:'Schweres Unwetter',
+    wmo_0:'Klarer Himmel', wmo_1:'Überwiegend Klar', wmo_2:'Teils Bewölkt', wmo_3:'Bedeckt',
+    wmo_fog:'Neblig', wmo_drizzle:'Nieselregen', wmo_rain:'Regen', wmo_snow:'Schnee',
+    wmo_rain_showers:'Regenschauer', wmo_snow_showers:'Schneeschauer', wmo_thunderstorm:'Gewitter',
+    ck_earthquake_reason:'Basierend auf seismischer Aktivität in Ihrer Region',
+    ck_wildfire_reason:'Waldbrandereignisse in Ihrer Region erkannt',
+    ck_flood_reason:'Überschwemmungen in Ihrer Nähe erkannt',
+    ck_volcano_reason:'Vulkanische Aktivität in Ihrer Nähe erkannt',
+    ck_winter_storm_reason:'Wintersturmrisiko oder Warnungen erkannt',
+    ck_hurricane_reason:'Hurrikanrisiko oder Warnungen erkannt',
+    ck_tornado_reason:'Tornadorisiko oder Warnungen erkannt',
+    ck_extreme_heat_reason:'Hitzewarnung in der Region aktiv',
+    ck_storm_reason:'Sturmereignisse in der Region erkannt',
+    ck_drought_reason:'Dürrebedingungen in der Region erkannt',
+    ck_severe_weather_reason:'Allgemeines Unwetterrisiko für diese Region',
+    ck_earthquake_items:['Wasser — 1 Gallon/Person/Tag für 3+ Tage','Haltbare Lebensmittel (Vorrat für 3 Tage)','Taschenlampe + Ersatzbatterien','Erste-Hilfe-Set mit Handbuch','Schraubenschlüssel oder Zange zum Absperren von Versorgungsleitungen','N95-Staubmasken','Robuste Schuhe für jedes Haushaltsmitglied','Notfallkontaktliste (gedruckt)','Kopien von Dokumenten in wasserdichter Tasche','Gas-/Wasserabsperrungen im Haus kennen','Schwere Möbel an der Wand befestigen','Sichere Plätze in jedem Raum identifizieren (unter stabilen Tischen)'],
+    ck_wildfire_items:['N95-Masken gegen Raucheinatmung','72-Stunden-Notfallrucksack griffbereit','Wichtige Dokumente in feuerfestem Behälter','Tragbares Ladegerät + Kabel','Medikamentenvorrat für 30 Tage wenn möglich','2+ Evakuierungsrouten von zu Hause kennen','Für lokale Notfallwarnungen registrieren','ABC-Feuerlöscher (10 Pfund)','Vegetation 9+ m vom Gebäude entfernen','Bargeld in kleinen Scheinen','Tierkit (Futter, Wasser, Tierarztunterlagen, Transportbox)','Papierkarte der Umgebung'],
+    ck_flood_items:['Wasserdichte Tasche für wichtige Dokumente','Zusätzliches Wasser (Überschwemmungen verunreinigen Leitungswasser)','Sandsäcke oder Hochwasserschutz für Eingänge','Akku-/Kurbelwetterradio','Eigene FEMA-Hochwasserzone kennen','Elektrische Schalttafeln anheben wenn hochwassergefährdet','Sumpfpumpe mit Akkusicherung','Gummistiefel + wasserdichte Handschuhe','Hochwasserversicherung prüfen (NFIP)','Wasserdichte Plane (min. 2,4×3 m)','Notfallkontakte für Versorgungsabsperrung','Plastikfolie + Klebeband'],
+    ck_volcano_items:['Schutzbrille gegen Asche','N95+-Masken (Asche ist ein ernstes Atemwegsgefahr)','Langarmkleidung + lange Hosen','Lokale Evakuierungszonen für Lavaströme kennen','Für vulkanische Benachrichtigungen anmelden','Plastikfolie zum Abdichten von Lüftungsschlitzen gegen Asche','Wasservorrat für 3 Tage (Asche verunreinigt Wasser)','Staubmasken für Haustiere','Zusätzliche HVAC-Luftfilter'],
+    ck_winter_storm_items:['Streusalz oder Sand für Wege','Schneeschaufel + Fahrzeug-Eiskratzer','Warme Schichten (Wolle/Kunstfaser — kein Baumwolle)','Auto-Notfallkit (Decke, Schaufel, Überbrückungskabel)','Notheizquelle (CO-sicher)','Essen + Wasser für 3 Tage bei Straßensperrungen','Extra Decken + Schlafsäcke','Freiliegende Rohre isolieren','Unterkühlung-Erste-Hilfe kennen','Ältere Nachbarn überprüfen'],
+    ck_hurricane_items:['Essen + Wasser für 7 Tage (1 Gallon/Person/Tag)','Tragbare Powerstation oder Generator','Hurrikanschutzläden oder Sperrholz für Fenster','Sturmflutzonen + Schutzraum kennen','Vollgetanktes Fahrzeug vor der Sturmsaison','Bäume in Gebäudenähe beschneiden','NOAA-Wetterradio (batteriebetrieben)','Notfallbargeld','Wasserdichte Dokumentenaufbewahrung','Erste-Hilfe-Set + Medikamente'],
+    ck_tornado_items:['Designierter Schutzraum (innen, tiefstes Stockwerk, keine Fenster)','Helm zum Schutz vor Trümmern','Robuste geschlossene Schuhe','NOAA-Wetterradio oder zuverlässige Warn-App','Tornado-Übung mit dem Haushalt durchführen','Erste-Hilfe-Set','Akkusicherung für Telefon','Unterschied zwischen Tornado-Warnung und -Alarm kennen'],
+    ck_extreme_heat_items:['Ventilatoren, tragbare Klimaanlage oder lokale Kühlzentren','Elektrolytgetränke / orale Rehydratationslösungen','Helle, luftige Kleidung','Verdunkelungsvorhänge zur Reduzierung der Innenhitze','Hitzschlag-Symptome erkennen + Behandlung','Ältere Menschen + Kleinkinder regelmäßig kontrollieren','Niemals Menschen oder Tiere in geparkten Fahrzeugen lassen','Sonnenschutz LSF 30+','Outdoor-Aktivitäten für früh morgens planen'],
+    ck_storm_items:['Batteriebetriebenes Wetterradio','Überspannungsschutz für Elektronik','72-Stunden-Notfallrucksack','Erste-Hilfe-Set','Essen + Wasser für 3 Tage','Taschenlampe + Ersatzbatterien','Lokale Schutzräume kennen','Tragbares Ladegerät'],
+    ck_drought_items:['Wassersparplan (Wassersparende Armaturen)','Regenwassersammelsystem','Dürreresistente Bepflanzung','Lokale Wassereinschränkungen kennen','Große Wasserbehälter','Feuerschutz-Landschaftsgestaltung (Dürre erhöht Brandrisiko)'],
+    ck_severe_weather_items:['Batteriebetriebenes Wetterradio','72-Stunden-Notfallrucksack','Erste-Hilfe-Set','Backup-Kopien wichtiger Dokumente','Lokale Notunterkünfte kennen','Essen + Wasser für 3 Tage','Taschenlampe + Batterien','Tragbares Ladegerät'],
+    ck_universal_items:['Erste-Hilfe-Set mit gedrucktem Handbuch','Kopien von Ausweis, Versicherung und Krankenakten','72-Stunden-Notfallrucksack pro Haushaltsmitglied','Gedruckte Notfallkontaktliste','Batterie- oder Kurbelradio','Tragbares Ladegerät'],
+  },
+  zh: {
+    lang_name:'中文', header_subtitle:'实时灾害意识与备灾清单',
+    search_label:'搜索您的地区', search_placeholder:'城市、州或邮编…',
+    search_btn:'搜索', geo_btn:'📍 使用我的位置',
+    empty_title:'搜索您的地区以开始',
+    empty_msg:'输入城市或使用您的位置，查看近期灾害事件、<br>风险分析和个性化备灾清单。',
+    loading_title:'正在获取区域数据…',
+    loading_msg:'查询USGS地震、NASA EONET自然事件<br>及NWS天气警报',
+    map_title:'🗺️ 事件地图', time_machine:'⏱ 时光机', all_time:'全部时间',
+    play:'▶ 播放', pause:'⏸ 暂停',
+    stat_quakes:'地震', stat_fires:'野火', stat_floods:'洪水', stat_alerts:'警报',
+    risks_title:'⚠️ 主要区域风险',
+    day_btn:'今日', week_btn:'本周', month_btn:'本月', yr_unit:'年',
+    tracker_title:'👨‍👩‍👧 家庭追踪器',
+    family_placeholder:'新家庭名称…', add_family_btn:'+ 家庭',
+    join_placeholder:'输入代码加入家庭…', join_btn:'加入',
+    weather_nav_btn:'⛅ 天气', checklist_nav_btn:'✅ 备灾清单',
+    back_menu:'← 返回菜单', back_results:'← 返回结果',
+    checklist_title:'✅ 备灾清单',
+    checklist_subtitle:'根据您的区域风险定制 · 逐项勾选以完善您的备灾包',
+    overall_prep:'总体备灾情况',
+    weather_title:'⛅ 当前天气', wind_speed:'风速', precipitation:'降水量', feels_like:'体感温度',
+    share_btn:'🔗 分享', save_report_btn:'💾 保存报告',
+    no_events:'在选定时间窗口内，此地区未检测到重大事件。',
+    weighted_event:'加权事件', weighted_events:'加权事件',
+    conf_high:'高置信度', conf_med:'中置信度', conf_low:'低置信度',
+    universal_name:'通用必备物资', universal_reason:'适用于所有紧急情况类型', reset_btn:'↺ 重置',
+    risk_earthquake:'地震', risk_wildfire:'野火', risk_flood:'洪水', risk_volcano:'火山',
+    risk_storm:'强烈风暴', risk_drought:'干旱', risk_tornado:'龙卷风', risk_hurricane:'飓风',
+    risk_winter_storm:'冬季风暴', risk_extreme_heat:'极端高温', risk_severe_weather:'严重天气',
+    wmo_0:'晴天', wmo_1:'大致晴朗', wmo_2:'多云', wmo_3:'阴天',
+    wmo_fog:'雾', wmo_drizzle:'毛毛雨', wmo_rain:'雨', wmo_snow:'雪',
+    wmo_rain_showers:'阵雨', wmo_snow_showers:'阵雪', wmo_thunderstorm:'雷暴',
+    ck_earthquake_reason:'基于您所在地区检测到的地震活动',
+    ck_wildfire_reason:'您所在地区检测到野火事件',
+    ck_flood_reason:'您所在地区附近检测到洪水事件',
+    ck_volcano_reason:'您所在地区附近检测到火山活动',
+    ck_winter_storm_reason:'检测到冬季风暴风险或警报',
+    ck_hurricane_reason:'检测到飓风风险或警报',
+    ck_tornado_reason:'检测到龙卷风风险或警报',
+    ck_extreme_heat_reason:'该地区极端高温警报生效',
+    ck_storm_reason:'该地区检测到风暴事件',
+    ck_drought_reason:'该地区检测到干旱状况',
+    ck_severe_weather_reason:'该地区存在一般性严重天气风险',
+    ck_earthquake_items:['水 — 每人每天1加仑，储备3天以上','非易腐食品（3天供应量）','手电筒 + 备用电池','急救箱（含使用手册）','扳手或钳子（用于关闭公用设施阀门）','N95防尘口罩','每位家庭成员的坚固鞋子','紧急联系人名单（纸质版）','防水袋中的文件副本','了解家中煤气/水管的关闭方式','将重型家具固定在墙上','识别每个房间的安全位置（坚固桌子下方）'],
+    ck_wildfire_items:['防烟雾吸入的N95口罩','72小时应急包（随时可取）','重要文件存放于防火容器中','便携式手机充电器 + 数据线','如可能，备足30天药品供应','了解从家中撤离的2条以上疏散路线','注册当地紧急警报','ABC灭火器（10磅）','清除建筑物周围9米内的植被','备有小额现金','宠物套装（食物、水、兽医记录、运输笼）','区域纸质地图'],
+    ck_flood_items:['防水袋存放重要文件','额外饮用水（洪水会污染供水）','沙袋或防洪屏障用于出入口','电池/手摇天气收音机','了解您的FEMA洪水区划','如处于洪涝频发地区，应抬高配电盘','带备用电池的排水泵','橡胶靴 + 防水手套','检查洪水保险（NFIP）','防水篷布（最小2.4×3米）','公用设施紧急关闭联系人','塑料薄膜 + 胶带'],
+    ck_volcano_items:['防火山灰的护目镜','N95+口罩（火山灰是严重的呼吸道危害）','长袖衣物 + 长裤','了解当地熔岩流疏散区','注册火山警报通知','用塑料薄膜封闭通风口防止火山灰进入','3天饮用水储备（火山灰会污染水源）','宠物防尘口罩','备用HVAC空气过滤器'],
+    ck_winter_storm_items:['道路撒盐或沙子','铲雪工具 + 车辆除冰刮刀','保暖衣物（羊毛/合成纤维 — 非棉质）','车辆应急套装（毛毯、铲子、跨接电缆）','备用供暖设备（防一氧化碳中毒）','备足3天食物和水以防道路封闭','额外毛毯 + 睡袋','为外露管道保温','了解低体温症急救措施','关注老年邻居的状况'],
+    ck_hurricane_items:['备足7天食物和水（每人每天1加仑）','便携式电源站或发电机','飓风防护板或窗户胶合板','了解您的风暴潮区域 + 避难所','风暴季节前加满油箱','修剪建筑物附近的树木','NOAA天气收音机（电池供电）','应急现金','防水文件存储','急救箱 + 药品'],
+    ck_tornado_items:['指定避难室（内部、最低楼层、无窗）','保护头部免受碎片伤害的头盔','坚固的包头鞋','NOAA天气收音机或可靠警报应用','进行家庭龙卷风疏散演练','急救箱','手机备用电池','了解龙卷风预警与警报的区别'],
+    ck_extreme_heat_items:['电风扇、便携式空调或当地降温中心位置','电解质饮料 / 口服补液盐','浅色宽松服装','遮光窗帘以降低室内温度','识别中暑症状及治疗方法','定期关注老年人和幼儿的状况','切勿将人员或宠物留在停放的车辆中','防晒系数30+的防晒霜','将户外活动安排在清晨'],
+    ck_storm_items:['电池供电的天气收音机','电子设备防涌浪保护器','72小时应急包','急救箱','3天食物和水储备','手电筒 + 备用电池','了解当地避难所位置','便携式手机充电器'],
+    ck_drought_items:['节水计划（低流量装置）','雨水收集系统','耐旱景观绿化','了解当地用水限制','大容量储水容器','防火景观绿化（干旱增加火灾风险）'],
+    ck_severe_weather_items:['电池供电的天气收音机','72小时应急包','急救箱','重要文件的备份副本','了解当地紧急避难所位置','3天食物和水储备','手电筒 + 电池','便携式手机充电器'],
+    ck_universal_items:['带印刷手册的急救箱','身份证、保险和医疗记录的副本','每位家庭成员的72小时应急包','印刷版紧急联系人名单','电池或手摇收音机','便携式手机充电器'],
+  },
+};
+
+function t(key) {
+  const lang = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+  return (key in lang ? lang[key] : TRANSLATIONS.en[key]) ?? key;
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPh);
+  });
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn && !backBtn.classList.contains('hidden')) {
+    backBtn.textContent = (currentState === 'main') ? t('back_menu') : t('back_results');
+  }
+  const langBtn = document.getElementById('langPickerBtn');
+  if (langBtn) langBtn.textContent = '🌐 ' + t('lang_name');
+  document.querySelectorAll('.lang-option').forEach(b =>
+    b.classList.toggle('active', b.dataset.lang === currentLang));
+  document.documentElement.lang = currentLang;
+  if (currentRisks.length) { renderRisks(currentRisks); renderChecklist(currentRisks); }
+  if (weatherData) renderWeather(weatherData);
+  renderTracker();
+}
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('mrr_lang', lang);
+  document.getElementById('langMenu').classList.add('hidden');
+  applyTranslations();
+}
+
+function toggleLangMenu() {
+  document.getElementById('langMenu').classList.toggle('hidden');
+}
+
+document.addEventListener('click', e => {
+  const picker = document.getElementById('langPicker');
+  if (picker && !picker.contains(e.target))
+    document.getElementById('langMenu').classList.add('hidden');
+});
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function haversineKm(lat1, lon1, lat2, lon2) {
   const r = x => x * Math.PI / 180;
@@ -78,19 +403,19 @@ function showState(which) {
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('shareRow').classList.remove('hidden');
-    backBtn.textContent = '← Back to Menu';
+    backBtn.textContent = t('back_menu');
     backBtn.classList.remove('hidden');
     checklistBtn.classList.remove('hidden');
     weatherBtn.classList.remove('hidden');
   } else if (which === 'checklist') {
     document.getElementById('checklistPage').classList.remove('hidden');
-    backBtn.textContent = '← Results';
+    backBtn.textContent = t('back_results');
     backBtn.classList.remove('hidden');
     checklistBtn.classList.add('hidden');
     weatherBtn.classList.add('hidden');
   } else if (which === 'weather') {
     document.getElementById('weatherPage').classList.remove('hidden');
-    backBtn.textContent = '← Results';
+    backBtn.textContent = t('back_results');
     backBtn.classList.remove('hidden');
     checklistBtn.classList.add('hidden');
     weatherBtn.classList.add('hidden');
@@ -519,7 +844,7 @@ function renderRisks(risks) {
   currentRisks = risks;
   if (!risks.length) {
     document.getElementById('risksBody').innerHTML =
-      '<div style="font-size:0.83rem;color:var(--text-dim);padding:8px 0;">No significant events detected in this region for the selected window.</div>';
+      `<div style="font-size:0.83rem;color:var(--text-dim);padding:8px 0;">${t('no_events')}</div>`;
     return;
   }
   document.getElementById('risksBody').innerHTML = risks.map(r => {
@@ -528,8 +853,8 @@ function renderRisks(risks) {
     <div class="risk-item">
       <div class="risk-rank" style="background:${color}22; color:${color}">${r.rank}</div>
       <div class="risk-info">
-        <div class="risk-name" style="color:${color}">${r.icon} ${r.name}</div>
-        <div class="risk-desc">${r.score} weighted event${r.score !== 1 ? 's' : ''} · ${analysisLabel} window</div>
+        <div class="risk-name" style="color:${color}">${r.icon} ${t('risk_' + r.type) || r.name}</div>
+        <div class="risk-desc">${r.score} ${r.score !== 1 ? t('weighted_events') : t('weighted_event')} · ${analysisLabel} window</div>
       </div>
       <div class="risk-bar-wrap">
         <div class="risk-bar" style="width:${r.pct}%; background:${color}"></div>
@@ -548,13 +873,16 @@ function renderChecklist(risks) {
     .filter(g => g.items)
     .concat([{ icon: '🧰', name: 'Universal Essentials', type: 'universal', items: UNIVERSAL, confidence: 'high', reason: 'Applies to every emergency type' }]);
 
-  const confMap = { high: ['conf-high','High confidence'], med: ['conf-med','Medium confidence'], low: ['conf-low','Low confidence'] };
+  const confMap = { high: ['conf-high', t('conf_high')], med: ['conf-med', t('conf_med')], low: ['conf-low', t('conf_low')] };
 
   document.getElementById('checklistGrid').innerHTML = groups.map(g => {
-    const [cls, label] = confMap[g.confidence] || ['conf-med','Medium confidence'];
-    const checkedCount = g.items.filter((_, i) => localStorage.getItem(ckKey(g.type, i)) === '1').length;
-    const initPct = g.items.length ? Math.round(checkedCount / g.items.length * 100) : 0;
-    const items = g.items.map((item, i) => {
+    const displayName = g.type === 'universal' ? t('universal_name') : (t('risk_' + g.type) || g.name);
+    const reason      = g.type === 'universal' ? t('universal_reason') : (t('ck_' + g.type + '_reason') || g.reason);
+    const items       = (t('ck_' + g.type + '_items') || (g.type === 'universal' ? UNIVERSAL : g.items) || []);
+    const [cls, label] = confMap[g.confidence] || ['conf-med', t('conf_med')];
+    const checkedCount = items.filter((_, i) => localStorage.getItem(ckKey(g.type, i)) === '1').length;
+    const initPct = items.length ? Math.round(checkedCount / items.length * 100) : 0;
+    const itemsHtml = items.map((item, i) => {
       const key = ckKey(g.type, i);
       const checked = localStorage.getItem(key) === '1';
       return `<div class="checklist-item">
@@ -563,11 +891,11 @@ function renderChecklist(risks) {
       </div>`;
     }).join('');
     return `<div class="checklist-group" data-group="${g.type}">
-      <div class="checklist-group-head">${g.icon} ${g.name}<span class="conf-badge ${cls}">${label}</span></div>
-      <div class="checklist-reason">${g.reason}</div>
-      ${items}
+      <div class="checklist-group-head">${g.icon} ${displayName}<span class="conf-badge ${cls}">${label}</span></div>
+      <div class="checklist-reason">${reason}</div>
+      ${itemsHtml}
       <div class="ck-group-bar-wrap"><div class="ck-group-bar-fill" style="width:${initPct}%;background-color:${pctColor(initPct)}"></div></div>
-      <button class="ck-reset-btn" onclick="resetGroup('${g.type}', ${g.items.length})">↺ Reset</button>
+      <button class="ck-reset-btn" onclick="resetGroup('${g.type}', ${items.length})">${t('reset_btn')}</button>
     </div>`;
   }).join('');
   updateChecklistProgress();
@@ -660,7 +988,7 @@ function windowEvents(years) {
 }
 
 function stopPlay() {
-  if (playInterval) { clearInterval(playInterval); playInterval = null; document.getElementById('playBtn').textContent = '▶ Play'; }
+  if (playInterval) { clearInterval(playInterval); playInterval = null; document.getElementById('playBtn').textContent = t('play'); }
 }
 
 function setupSlider(years) {
@@ -758,12 +1086,12 @@ function togglePlay() {
     slider.dispatchEvent(new Event('input'));
   }
 
-  btn.textContent = '⏸ Pause';
+  btn.textContent = t('pause');
   playInterval = setInterval(() => {
     const next = parseInt(slider.value) + 1;
     if (next > sliderMax) {
       clearInterval(playInterval); playInterval = null;
-      btn.textContent = '▶ Play'; return;
+      btn.textContent = t('play'); return;
     }
     slider.value = next;
     slider.dispatchEvent(new Event('input'));
@@ -983,10 +1311,10 @@ const WMO_ICON = code =>
   code <= 82 ? '🌧️' : code <= 86 ? '❄️' : '⛈️';
 
 const WMO_DESC = code =>
-  code === 0 ? 'Clear Sky' : code === 1 ? 'Mostly Clear' : code === 2 ? 'Partly Cloudy' :
-  code === 3 ? 'Overcast' : code <= 48 ? 'Foggy' : code <= 57 ? 'Drizzle' :
-  code <= 67 ? 'Rain' : code <= 77 ? 'Snow' : code <= 82 ? 'Rain Showers' :
-  code <= 86 ? 'Snow Showers' : 'Thunderstorm';
+  code === 0 ? t('wmo_0') : code === 1 ? t('wmo_1') : code === 2 ? t('wmo_2') :
+  code === 3 ? t('wmo_3') : code <= 48 ? t('wmo_fog') : code <= 57 ? t('wmo_drizzle') :
+  code <= 67 ? t('wmo_rain') : code <= 77 ? t('wmo_snow') : code <= 82 ? t('wmo_rain_showers') :
+  code <= 86 ? t('wmo_snow_showers') : t('wmo_thunderstorm');
 
 async function fetchWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
@@ -1022,17 +1350,17 @@ function renderWeather(data) {
       <div style="font-size:4.5rem; line-height:1; margin-bottom:10px;">${WMO_ICON(code)}</div>
       <div style="font-size:0.9rem; color:var(--text-dim); margin-bottom:10px; font-weight:600; letter-spacing:0.03em;">${WMO_DESC(code)}</div>
       <div style="font-size:4rem; font-weight:700; color:var(--accent); line-height:1;">${tempVal}${tempUnit}</div>
-      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">Feels like <strong style="color:var(--text);">${feelsVal}${tempUnit}</strong></div>
+      <div style="font-size:0.88rem; color:var(--text-dim); margin-top:10px;">${t('feels_like')} <strong style="color:var(--text);">${feelsVal}${tempUnit}</strong></div>
     </div>
     <div class="weather-grid">
       <div class="weather-stat-card">
         <div class="weather-stat-icon">💨</div>
-        <div class="weather-stat-label">Wind Speed</div>
+        <div class="weather-stat-label">${t('wind_speed')}</div>
         <div class="weather-stat-value">${windVal} <span style="font-size:0.9rem;color:var(--text-dim);">${windUnit}</span></div>
       </div>
       <div class="weather-stat-card">
         <div class="weather-stat-icon">🌧️</div>
-        <div class="weather-stat-label">Precipitation</div>
+        <div class="weather-stat-label">${t('precipitation')}</div>
         <div class="weather-stat-value">${precipVal} <span style="font-size:0.9rem;color:var(--text-dim);">${precipUnit}</span></div>
       </div>
     </div>`;
@@ -1460,6 +1788,7 @@ function saveReport() {
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
+  applyTranslations();
   document.getElementById('familyInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFamily(); });
   document.getElementById('joinCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinFamilyByCode(e.target.value); });
   // Reconnect any families that were already live (restores real-time sync on reload)

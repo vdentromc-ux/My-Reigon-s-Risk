@@ -53,6 +53,13 @@
     .unit-btn { background: transparent; border: none; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; color: var(--text-dim); cursor: pointer; transition: background 0.15s, color 0.15s; font-family: inherit; }
     .unit-btn.active { background: var(--accent); color: #fff; }
     .unit-btn:hover:not(.active) { background: var(--surface2); }
+    .lang-picker { position: relative; flex-shrink: 0; }
+    .lang-picker-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .lang-picker-btn:hover { background: var(--border); }
+    .lang-menu { position: absolute; top: calc(100% + 6px); left: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 6px; z-index: 999; box-shadow: 0 8px 24px rgba(0,0,0,0.45); min-width: 155px; }
+    .lang-option { display: block; width: 100%; background: none; border: none; padding: 7px 12px; border-radius: 6px; color: var(--text); font-size: 0.83rem; font-weight: 600; cursor: pointer; text-align: left; font-family: inherit; transition: background 0.1s; }
+    .lang-option:hover { background: var(--border); }
+    .lang-option.active { color: var(--accent); }
 
     .search-section { padding: 28px 24px 0; max-width: 800px; margin: 0 auto; }
     .search-section label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
@@ -261,27 +268,37 @@
 
 <header>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">☀️ Light</button>
+  <div class="lang-picker" id="langPicker">
+    <button class="lang-picker-btn" id="langPickerBtn" onclick="toggleLangMenu()">🌐 EN</button>
+    <div class="lang-menu hidden" id="langMenu">
+      <button class="lang-option" data-lang="en" onclick="setLanguage('en')">🇺🇸 English</button>
+      <button class="lang-option" data-lang="es" onclick="setLanguage('es')">🇪🇸 Español</button>
+      <button class="lang-option" data-lang="fr" onclick="setLanguage('fr')">🇫🇷 Français</button>
+      <button class="lang-option" data-lang="de" onclick="setLanguage('de')">🇩🇪 Deutsch</button>
+      <button class="lang-option" data-lang="zh" onclick="setLanguage('zh')">🇨🇳 中文</button>
+    </div>
+  </div>
   <button class="back-btn hidden" id="backBtn" onclick="backToMenu()">← Back to Menu</button>
   <span class="logo">🗺️</span>
   <div>
     <h1>My Region's Risk</h1>
-    <p>Real-time disaster awareness &amp; preparedness checklist</p>
+    <p data-i18n="header_subtitle">Real-time disaster awareness &amp; preparedness checklist</p>
   </div>
   <div class="nav-page-btns">
-    <button class="nav-page-btn hidden" id="weatherBtn" onclick="showWeatherPage()">⛅ Weather</button>
-    <button class="nav-page-btn hidden" id="checklistBtn" onclick="showChecklistPage()">✅ Preparedness Checklist</button>
+    <button class="nav-page-btn hidden" id="weatherBtn" data-i18n="weather_nav_btn" onclick="showWeatherPage()">⛅ Weather</button>
+    <button class="nav-page-btn hidden" id="checklistBtn" data-i18n="checklist_nav_btn" onclick="showChecklistPage()">✅ Preparedness Checklist</button>
   </div>
 </header>
 
 <div class="search-section">
-  <label for="cityInput">Search your region</label>
+  <label for="cityInput" data-i18n="search_label">Search your region</label>
   <div class="search-row">
     <div class="search-input-wrap">
-      <input type="text" id="cityInput" class="search-input" placeholder="City, state, or zip code…" autocomplete="off"/>
+      <input type="text" id="cityInput" class="search-input" placeholder="City, state, or zip code…" data-i18n-ph="search_placeholder" autocomplete="off"/>
       <div id="suggestionsDrop" class="suggestions-drop hidden"></div>
     </div>
-    <button class="btn btn-primary" id="searchBtn" onclick="handleSearch()">Search</button>
-    <button class="btn btn-secondary" id="geoBtn" onclick="handleGeolocate()">📍 Use My Location</button>
+    <button class="btn btn-primary" id="searchBtn" data-i18n="search_btn" onclick="handleSearch()">Search</button>
+    <button class="btn btn-secondary" id="geoBtn" data-i18n="geo_btn" onclick="handleGeolocate()">📍 Use My Location</button>
   </div>
 </div>
 
@@ -296,14 +313,14 @@
 <!-- States -->
 <div id="emptyState" class="state-container">
   <div class="state-icon">🌍</div>
-  <div class="state-title">Search your region to get started</div>
-  <div class="state-msg">Enter a city or use your location to see recent disaster events,<br>a risk analysis, and a personalized preparedness checklist.</div>
+  <div class="state-title" data-i18n="empty_title">Search your region to get started</div>
+  <div class="state-msg" data-i18n-html="empty_msg">Enter a city or use your location to see recent disaster events,<br>a risk analysis, and a personalized preparedness checklist.</div>
 </div>
 
 <div id="loadingState" class="state-container hidden">
   <div class="spinner"></div>
-  <div class="state-title">Fetching regional data…</div>
-  <div class="state-msg">Querying USGS earthquakes, NASA EONET natural events,<br>and NWS active weather alerts</div>
+  <div class="state-title" data-i18n="loading_title">Fetching regional data…</div>
+  <div class="state-msg" data-i18n-html="loading_msg">Querying USGS earthquakes, NASA EONET natural events,<br>and NWS active weather alerts</div>
 </div>
 
 <div id="errorState" class="state-container hidden">
@@ -326,13 +343,13 @@
   <!-- Left: Map card -->
   <div class="card" style="grid-row: span 2;">
     <div class="card-header">
-      <span class="card-title">🗺️ Event Map <span id="mapCount" style="font-weight:400; color:var(--text-dim);"></span></span>
+      <span class="card-title"><span data-i18n="map_title">🗺️ Event Map</span> <span id="mapCount" style="font-weight:400; color:var(--text-dim);"></span></span>
       <div id="mapLegend" style="display:flex; gap:5px; flex-wrap:wrap;"></div>
     </div>
     <div id="map"></div>
     <div class="time-slider-section">
       <div class="time-label-row">
-        <span>⏱ Time Machine</span>
+        <span data-i18n="time_machine">⏱ Time Machine</span>
         <span id="sliderRange"></span>
       </div>
       <input type="range" class="time-slider" id="timeSlider" min="0" max="5" value="5"/>
@@ -340,10 +357,10 @@
       <button class="btn btn-secondary time-play-btn" id="playBtn" onclick="togglePlay()">▶ Play</button>
     </div>
     <div class="stats-row">
-      <div class="stat"><div class="stat-num" id="statEq">—</div><div class="stat-label">Quakes</div></div>
-      <div class="stat"><div class="stat-num" id="statFire">—</div><div class="stat-label">Wildfires</div></div>
-      <div class="stat"><div class="stat-num" id="statFlood">—</div><div class="stat-label">Floods</div></div>
-      <div class="stat"><div class="stat-num" id="statAlerts">—</div><div class="stat-label">Alerts</div></div>
+      <div class="stat"><div class="stat-num" id="statEq">—</div><div class="stat-label" data-i18n="stat_quakes">Quakes</div></div>
+      <div class="stat"><div class="stat-num" id="statFire">—</div><div class="stat-label" data-i18n="stat_fires">Wildfires</div></div>
+      <div class="stat"><div class="stat-num" id="statFlood">—</div><div class="stat-label" data-i18n="stat_floods">Floods</div></div>
+      <div class="stat"><div class="stat-num" id="statAlerts">—</div><div class="stat-label" data-i18n="stat_alerts">Alerts</div></div>
     </div>
   </div>
 
@@ -353,16 +370,16 @@
     <!-- Top-3 Risks -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">⚠️ Top Regional Risks</span>
+        <span class="card-title" data-i18n="risks_title">⚠️ Top Regional Risks</span>
         <div class="yr-control" id="yrControl">
           <div class="yr-presets">
-            <button class="yr-btn period-btn" data-days="1"  onclick="applyDays(1)">Day</button>
-            <button class="yr-btn period-btn" data-days="7"  onclick="applyDays(7)">Week</button>
-            <button class="yr-btn period-btn" data-days="30" onclick="applyDays(30)">Month</button>
+            <button class="yr-btn period-btn" data-days="1"  data-i18n="day_btn"   onclick="applyDays(1)">Day</button>
+            <button class="yr-btn period-btn" data-days="7"  data-i18n="week_btn"  onclick="applyDays(7)">Week</button>
+            <button class="yr-btn period-btn" data-days="30" data-i18n="month_btn" onclick="applyDays(30)">Month</button>
           </div>
           <div style="display:flex;align-items:center;gap:5px;">
             <input type="number" id="yrInput" class="yr-input" min="1" max="20" value="5"/>
-            <span class="yr-unit">yr</span>
+            <span class="yr-unit" data-i18n="yr_unit">yr</span>
             <div class="yr-presets">
               <button class="yr-btn" data-yr="1" onclick="applyYears(1)">1</button>
               <button class="yr-btn" data-yr="3" onclick="applyYears(3)">3</button>
@@ -378,17 +395,17 @@
     <!-- Household tracker -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">👨‍👩‍👧 Household Tracker</span>
+        <span class="card-title" data-i18n="tracker_title">👨‍👩‍👧 Household Tracker</span>
       </div>
       <div class="card-body">
         <div id="trackerGrid"></div>
         <div class="add-family-row">
-          <input type="text" id="familyInput" class="tracker-input" placeholder="New family name…" maxlength="40"/>
-          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" onclick="addFamily()">+ Family</button>
+          <input type="text" id="familyInput" class="tracker-input" placeholder="New family name…" data-i18n-ph="family_placeholder" maxlength="40"/>
+          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" data-i18n="add_family_btn" onclick="addFamily()">+ Family</button>
         </div>
         <div class="add-family-row" style="margin-top:6px;">
-          <input type="text" id="joinCodeInput" class="tracker-input" placeholder="Enter code to join a family…" maxlength="8" style="text-transform:uppercase; letter-spacing:0.08em;"/>
-          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" onclick="joinFamilyByCode(document.getElementById('joinCodeInput').value)">Join</button>
+          <input type="text" id="joinCodeInput" class="tracker-input" placeholder="Enter code to join a family…" data-i18n-ph="join_placeholder" maxlength="8" style="text-transform:uppercase; letter-spacing:0.08em;"/>
+          <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" data-i18n="join_btn" onclick="joinFamilyByCode(document.getElementById('joinCodeInput').value)">Join</button>
         </div>
       </div>
     </div>
@@ -402,12 +419,12 @@
 <div id="checklistPage" class="hidden" style="max-width:1100px; margin:0 auto; padding:20px 24px;">
   <div class="card">
     <div class="card-header">
-      <span class="card-title">✅ Preparedness Checklist</span>
-      <span style="font-size:0.72rem; color:var(--text-dim);">Tailored to your regional risks · check items off as you build your kit</span>
+      <span class="card-title" data-i18n="checklist_title">✅ Preparedness Checklist</span>
+      <span style="font-size:0.72rem; color:var(--text-dim);" data-i18n="checklist_subtitle">Tailored to your regional risks · check items off as you build your kit</span>
     </div>
     <div class="ck-progress-wrap">
       <div class="ck-progress-label">
-        <span>Overall Preparedness</span>
+        <span data-i18n="overall_prep">Overall Preparedness</span>
         <span id="ckPct" class="ck-progress-pct">0%</span>
       </div>
       <div class="ck-bar-bg"><div id="ckBar" class="ck-bar-fill"></div></div>
@@ -423,7 +440,7 @@
   <div class="card">
     <div class="card-header" style="flex-direction:column; align-items:stretch; gap:10px;">
       <div style="display:flex; align-items:center; justify-content:space-between;">
-        <span class="card-title">⛅ Current Weather</span>
+        <span class="card-title" data-i18n="weather_title">⛅ Current Weather</span>
         <span id="weatherLocation" style="font-size:0.72rem; color:var(--text-dim);"></span>
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -447,8 +464,8 @@
 
 <!-- Share / Save row -->
 <div id="shareRow" class="share-row hidden">
-  <button class="btn btn-secondary" id="shareBtn" onclick="shareResults()">🔗 Share</button>
-  <button class="btn btn-primary" onclick="saveReport()">💾 Save Report</button>
+  <button class="btn btn-secondary" id="shareBtn" data-i18n="share_btn" onclick="shareResults()">🔗 Share</button>
+  <button class="btn btn-primary" data-i18n="save_report_btn" onclick="saveReport()">💾 Save Report</button>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
