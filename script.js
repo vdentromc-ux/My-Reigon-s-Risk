@@ -416,17 +416,28 @@ function haversineKm(lat1, lon1, lat2, lon2) {
   return R_EARTH * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-let currentState = 'empty';
+let currentState = 'landing';
 
 function showState(which) {
   currentState = which;
-  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage','weatherPage','disastersPage'].forEach(id => {
+  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage','weatherPage','disastersPage','landingPage'].forEach(id => {
     document.getElementById(id)?.classList.add('hidden');
   });
+  const searchSection = document.getElementById('searchSection');
   const backBtn = document.getElementById('backBtn');
   const checklistBtn = document.getElementById('checklistBtn');
   const weatherBtn  = document.getElementById('weatherBtn');
   const disastersBtn = document.getElementById('disastersBtn');
+  if (which === 'landing') {
+    document.getElementById('landingPage').classList.remove('hidden');
+    if (searchSection) searchSection.classList.add('hidden');
+    backBtn.classList.add('hidden');
+    checklistBtn.classList.add('hidden');
+    weatherBtn.classList.add('hidden');
+    disastersBtn?.classList.add('hidden');
+    return;
+  }
+  if (searchSection) searchSection.classList.remove('hidden');
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('shareRow').classList.remove('hidden');
@@ -497,8 +508,21 @@ function showChecklistPage() {
   });
 }
 
+function enterApp() {
+  fadeOutThen(['landingPage'], () => {
+    showState('empty');
+    const s = document.getElementById('searchSection');
+    const e = document.getElementById('emptyState');
+    [s, e].forEach(el => {
+      if (!el) return;
+      el.classList.add('fade-in');
+      el.addEventListener('animationend', () => el.classList.remove('fade-in'), { once: true });
+    });
+  });
+}
+
 function showDisastersPage() {
-  fadeOutThen(['mainContent','shareRow','emptyState','loadingState','errorState','checklistPage','weatherPage'], () => {
+  fadeOutThen(['mainContent','shareRow','emptyState','loadingState','errorState','checklistPage','weatherPage','landingPage'], () => {
     showState('disasters');
     renderDisasterGrid();
     document.getElementById('disasterDetail').classList.add('hidden');
