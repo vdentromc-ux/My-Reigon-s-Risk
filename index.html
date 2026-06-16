@@ -61,6 +61,33 @@
     .lang-option:hover { background: var(--border); }
     .lang-option.active { color: var(--accent); }
 
+    /* ── Disasters page ─────────────────────────────────────────────────────── */
+    .dis-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    @media(max-width:760px){ .dis-grid { grid-template-columns:repeat(2,1fr); } }
+    @media(max-width:480px){ .dis-grid { grid-template-columns:1fr; } }
+    .dis-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px 18px; cursor:pointer; transition:all 0.18s; border-left:4px solid; }
+    .dis-card:hover { background:var(--surface2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.25); }
+    .dis-icon { font-size:2.4rem; line-height:1; margin-bottom:10px; }
+    .dis-name { font-size:0.95rem; font-weight:700; margin-bottom:5px; }
+    .dis-tagline { font-size:0.76rem; color:var(--text-dim); line-height:1.45; }
+    .dis-back { background:none; border:none; color:var(--accent); font-size:0.85rem; font-weight:600; cursor:pointer; padding:0 0 16px 0; font-family:inherit; text-align:left; display:block; }
+    .dis-back:hover { text-decoration:underline; }
+    .dis-banner { border-radius:var(--radius); padding:26px 24px 22px; margin-bottom:20px; }
+    .dis-banner-icon { font-size:3.2rem; line-height:1; margin-bottom:8px; }
+    .dis-banner-name { font-size:1.6rem; font-weight:700; color:#fff; margin-bottom:4px; }
+    .dis-banner-tagline { font-size:0.86rem; color:rgba(255,255,255,0.82); }
+    .dis-meta { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:22px; }
+    @media(max-width:500px){ .dis-meta { grid-template-columns:1fr; } }
+    .dis-meta-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:11px 14px; }
+    .dis-meta-label { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--text-dim); margin-bottom:3px; }
+    .dis-meta-val { font-size:0.82rem; font-weight:600; }
+    .dis-section { margin-bottom:20px; }
+    .dis-section-title { font-size:0.74rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim); margin-bottom:10px; }
+    .dis-desc { font-size:0.88rem; line-height:1.7; margin:0; }
+    .dis-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px; }
+    .dis-list li { display:flex; align-items:flex-start; gap:9px; font-size:0.84rem; line-height:1.5; }
+    .dis-bullet { flex-shrink:0; font-weight:700; }
+
     .search-section { padding: 28px 24px 0; max-width: 800px; margin: 0 auto; }
     .search-section label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
     .search-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -285,6 +312,7 @@
     <p data-i18n="header_subtitle">Real-time disaster awareness &amp; preparedness checklist</p>
   </div>
   <div class="nav-page-btns">
+    <button class="nav-page-btn" id="disastersBtn" data-i18n="disasters_nav_btn" onclick="showDisastersPage()">🌋 Natural Disasters</button>
     <button class="nav-page-btn hidden" id="weatherBtn" data-i18n="weather_nav_btn" onclick="showWeatherPage()">⛅ Weather</button>
     <button class="nav-page-btn hidden" id="checklistBtn" data-i18n="checklist_nav_btn" onclick="showChecklistPage()">✅ Preparedness Checklist</button>
   </div>
@@ -295,6 +323,7 @@
   <div class="search-row">
     <div class="search-input-wrap">
       <input type="text" id="cityInput" class="search-input" placeholder="City, state, or zip code…" data-i18n-ph="search_placeholder" autocomplete="off"/>
+      <div id="cityInputWarn" style="color:#ef476f;font-size:0.74rem;font-weight:600;margin-top:5px;display:none;"></div>
       <div id="suggestionsDrop" class="suggestions-drop hidden"></div>
     </div>
     <button class="btn btn-primary" id="searchBtn" data-i18n="search_btn" onclick="handleSearch()">Search</button>
@@ -403,6 +432,7 @@
           <input type="text" id="familyInput" class="tracker-input" placeholder="New family name…" data-i18n-ph="family_placeholder" maxlength="40"/>
           <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" data-i18n="add_family_btn" onclick="addFamily()">+ Family</button>
         </div>
+        <div id="familyInputWarn" style="color:#ef476f;font-size:0.74rem;font-weight:600;margin-top:4px;display:none;"></div>
         <div class="add-family-row" style="margin-top:6px;">
           <input type="text" id="joinCodeInput" class="tracker-input" placeholder="Enter code to join a family…" data-i18n-ph="join_placeholder" maxlength="8" style="text-transform:uppercase; letter-spacing:0.08em;"/>
           <button class="btn btn-secondary" style="padding:7px 11px; font-size:0.8rem;" data-i18n="join_btn" onclick="joinFamilyByCode(document.getElementById('joinCodeInput').value)">Join</button>
@@ -460,6 +490,12 @@
     </div>
     <div class="card-body" id="weatherBody"></div>
   </div>
+</div>
+
+<!-- Disasters page -->
+<div id="disastersPage" class="hidden" style="max-width:1100px; margin:0 auto; padding:20px 24px;">
+  <div id="disasterGrid"></div>
+  <div id="disasterDetail" class="hidden"></div>
 </div>
 
 <!-- Share / Save row -->

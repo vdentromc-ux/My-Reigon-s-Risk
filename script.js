@@ -77,6 +77,7 @@ const TRANSLATIONS = {
     tracker_title:'👨‍👩‍👧 Household Tracker',
     family_placeholder:'New family name…', add_family_btn:'+ Family',
     join_placeholder:'Enter code to join a family…', join_btn:'Join',
+    disasters_nav_btn:'🌋 Natural Disasters',
     weather_nav_btn:'⛅ Weather', checklist_nav_btn:'✅ Preparedness Checklist',
     back_menu:'← Back to Menu', back_results:'← Results',
     checklist_title:'✅ Preparedness Checklist',
@@ -122,6 +123,7 @@ const TRANSLATIONS = {
     tracker_title:'👨‍👩‍👧 Rastreador del Hogar',
     family_placeholder:'Nombre de familia nuevo…', add_family_btn:'+ Familia',
     join_placeholder:'Ingresa un código para unirte…', join_btn:'Unirse',
+    disasters_nav_btn:'🌋 Desastres Naturales',
     weather_nav_btn:'⛅ Clima', checklist_nav_btn:'✅ Lista de Preparación',
     back_menu:'← Volver al Menú', back_results:'← Resultados',
     checklist_title:'✅ Lista de Preparación',
@@ -179,6 +181,7 @@ const TRANSLATIONS = {
     tracker_title:'👨‍👩‍👧 Suivi du Ménage',
     family_placeholder:'Nom de la nouvelle famille…', add_family_btn:'+ Famille',
     join_placeholder:'Entrez un code pour rejoindre…', join_btn:'Rejoindre',
+    disasters_nav_btn:'🌋 Catastrophes Naturelles',
     weather_nav_btn:'⛅ Météo', checklist_nav_btn:'✅ Liste de Préparation',
     back_menu:'← Retour au Menu', back_results:'← Résultats',
     checklist_title:'✅ Liste de Préparation',
@@ -236,6 +239,7 @@ const TRANSLATIONS = {
     tracker_title:'👨‍👩‍👧 Haushalts-Tracker',
     family_placeholder:'Neuer Familienname…', add_family_btn:'+ Familie',
     join_placeholder:'Code eingeben, um beizutreten…', join_btn:'Beitreten',
+    disasters_nav_btn:'🌋 Naturkatastrophen',
     weather_nav_btn:'⛅ Wetter', checklist_nav_btn:'✅ Vorbereitungs-Checkliste',
     back_menu:'← Zurück zum Menü', back_results:'← Ergebnisse',
     checklist_title:'✅ Vorbereitungs-Checkliste',
@@ -293,6 +297,7 @@ const TRANSLATIONS = {
     tracker_title:'👨‍👩‍👧 家庭追踪器',
     family_placeholder:'新家庭名称…', add_family_btn:'+ 家庭',
     join_placeholder:'输入代码加入家庭…', join_btn:'加入',
+    disasters_nav_btn:'🌋 自然灾害',
     weather_nav_btn:'⛅ 天气', checklist_nav_btn:'✅ 备灾清单',
     back_menu:'← 返回菜单', back_results:'← 返回结果',
     checklist_title:'✅ 备灾清单',
@@ -384,6 +389,25 @@ document.addEventListener('click', e => {
     document.getElementById('langMenu').classList.add('hidden');
 });
 
+// ── Profanity filter ──────────────────────────────────────────────────────────
+const _PROFANITY_RE = /\b(ass(?:hole|wipe|hat|face|clown)?|bastard|bitch\w*|cock\w*|cunt\w*|dick(?:head)?\b|fag(?:got)?\w*|fuck\w*|nigga\w*|nigger\w*|prick|pussy|shit\w*|slut\w*|tit(?:s|ty)?\b|twat|wank\w*|whore\w*)\b/i;
+
+function hasProfanity(str) {
+  const s = str.toLowerCase()
+    .replace(/1/g,'i').replace(/3/g,'e').replace(/4/g,'a')
+    .replace(/0/g,'o').replace(/5/g,'s').replace(/@/g,'a').replace(/\$/g,'s');
+  return _PROFANITY_RE.test(s);
+}
+
+function showInputWarn(inputId, msg) {
+  document.getElementById(inputId + 'Warn').textContent = '⚠️ ' + msg;
+  document.getElementById(inputId + 'Warn').style.display = 'block';
+}
+function hideInputWarn(inputId) {
+  const el = document.getElementById(inputId + 'Warn');
+  if (el) el.style.display = 'none';
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function haversineKm(lat1, lon1, lat2, lon2) {
   const r = x => x * Math.PI / 180;
@@ -396,12 +420,13 @@ let currentState = 'empty';
 
 function showState(which) {
   currentState = which;
-  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage','weatherPage'].forEach(id => {
+  ['emptyState','loadingState','errorState','mainContent','shareRow','checklistPage','weatherPage','disastersPage'].forEach(id => {
     document.getElementById(id)?.classList.add('hidden');
   });
   const backBtn = document.getElementById('backBtn');
   const checklistBtn = document.getElementById('checklistBtn');
   const weatherBtn  = document.getElementById('weatherBtn');
+  const disastersBtn = document.getElementById('disastersBtn');
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('shareRow').classList.remove('hidden');
@@ -409,23 +434,34 @@ function showState(which) {
     backBtn.classList.remove('hidden');
     checklistBtn.classList.remove('hidden');
     weatherBtn.classList.remove('hidden');
+    disastersBtn?.classList.remove('hidden');
   } else if (which === 'checklist') {
     document.getElementById('checklistPage').classList.remove('hidden');
     backBtn.textContent = t('back_results');
     backBtn.classList.remove('hidden');
     checklistBtn.classList.add('hidden');
     weatherBtn.classList.add('hidden');
+    disastersBtn?.classList.remove('hidden');
   } else if (which === 'weather') {
     document.getElementById('weatherPage').classList.remove('hidden');
     backBtn.textContent = t('back_results');
     backBtn.classList.remove('hidden');
     checklistBtn.classList.add('hidden');
     weatherBtn.classList.add('hidden');
+    disastersBtn?.classList.remove('hidden');
+  } else if (which === 'disasters') {
+    document.getElementById('disastersPage').classList.remove('hidden');
+    backBtn.textContent = currentLocation ? t('back_results') : t('back_menu');
+    backBtn.classList.remove('hidden');
+    checklistBtn.classList.add('hidden');
+    weatherBtn.classList.add('hidden');
+    disastersBtn?.classList.add('hidden');
   } else {
     document.getElementById(which + 'State').classList.remove('hidden');
     backBtn.classList.add('hidden');
     checklistBtn.classList.add('hidden');
     weatherBtn.classList.add('hidden');
+    disastersBtn?.classList.remove('hidden');
   }
 }
 
@@ -461,6 +497,99 @@ function showChecklistPage() {
   });
 }
 
+function showDisastersPage() {
+  fadeOutThen(['mainContent','shareRow','emptyState','loadingState','errorState','checklistPage','weatherPage'], () => {
+    showState('disasters');
+    renderDisasterGrid();
+    document.getElementById('disasterDetail').classList.add('hidden');
+    document.getElementById('disasterGrid').classList.remove('hidden');
+    enterPage('disastersPage', 'page-enter-right');
+  });
+}
+
+function renderDisasterGrid() {
+  document.getElementById('disasterGrid').innerHTML = `
+    <div class="dis-grid">
+      ${DISASTERS.map(d => `
+        <div class="dis-card" style="border-left-color:${d.color}" onclick="showDisasterDetail('${d.type}')">
+          <div class="dis-icon">${d.icon}</div>
+          <div class="dis-name" style="color:${d.color}">${d.name}</div>
+          <div class="dis-tagline">${d.tagline}</div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function showDisasterDetail(type) {
+  const d = DISASTERS.find(x => x.type === type);
+  if (!d) return;
+  const grid = document.getElementById('disasterGrid');
+  const detail = document.getElementById('disasterDetail');
+  grid.style.transition = 'opacity 0.2s';
+  grid.style.opacity = '0';
+  setTimeout(() => {
+    grid.style.transition = '';
+    grid.style.opacity = '';
+    grid.classList.add('hidden');
+    const sec = (title, items, color) => !items?.length ? '' : `
+      <div class="dis-section">
+        <div class="dis-section-title">${title}</div>
+        <ul class="dis-list">${items.map(it =>
+          `<li><span class="dis-bullet" style="color:${color}">•</span><span>${it}</span></li>`
+        ).join('')}</ul>
+      </div>`;
+    detail.innerHTML = `
+      <button class="dis-back" onclick="backToDisasterGrid()">← All Disasters</button>
+      <div class="dis-banner" style="background:linear-gradient(135deg,${d.color}ee,${d.color}99);">
+        <div class="dis-banner-icon">${d.icon}</div>
+        <div class="dis-banner-name">${d.name}</div>
+        <div class="dis-banner-tagline">${d.tagline}</div>
+      </div>
+      <div class="dis-meta">
+        <div class="dis-meta-card"><div class="dis-meta-label">⚠️ Severity</div><div class="dis-meta-val">${d.severity}</div></div>
+        <div class="dis-meta-card"><div class="dis-meta-label">⏱ Warning Time</div><div class="dis-meta-val">${d.speed}</div></div>
+        <div class="dis-meta-card"><div class="dis-meta-label">📍 Scale</div><div class="dis-meta-val">${d.affected_area}</div></div>
+      </div>
+      <div class="dis-section">
+        <div class="dis-section-title">📖 About</div>
+        <p class="dis-desc">${d.description}</p>
+      </div>
+      ${sec('⚡ Causes', d.causes, '#ffd166')}
+      ${sec('⚠️ Warning Signs', d.warning_signs, '#ef476f')}
+      ${sec('🛡️ What to Do During', d.during, '#06d6a0')}
+      ${sec('✅ What to Do After', d.after, '#4ecdc4')}
+      ${sec('📊 Fast Facts', d.facts, 'var(--accent)')}`;
+    detail.classList.remove('hidden');
+    detail.style.opacity = '0';
+    requestAnimationFrame(() => {
+      detail.style.transition = 'opacity 0.25s';
+      detail.style.opacity = '1';
+      setTimeout(() => { detail.style.transition = ''; }, 280);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 200);
+}
+
+function backToDisasterGrid() {
+  const grid = document.getElementById('disasterGrid');
+  const detail = document.getElementById('disasterDetail');
+  detail.style.transition = 'opacity 0.2s';
+  detail.style.opacity = '0';
+  setTimeout(() => {
+    detail.style.transition = '';
+    detail.style.opacity = '';
+    detail.classList.add('hidden');
+    grid.classList.remove('hidden');
+    grid.style.opacity = '0';
+    requestAnimationFrame(() => {
+      grid.style.transition = 'opacity 0.25s';
+      grid.style.opacity = '1';
+      setTimeout(() => { grid.style.transition = ''; }, 280);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 200);
+}
+
 function backToMenu() {
   if (currentState === 'checklist') {
     fadeOutThen(['checklistPage'], () => { showState('main'); enterPage('mainContent', 'page-enter-left'); });
@@ -468,6 +597,14 @@ function backToMenu() {
   }
   if (currentState === 'weather') {
     fadeOutThen(['weatherPage'], () => { showState('main'); enterPage('mainContent', 'page-enter-left'); });
+    return;
+  }
+  if (currentState === 'disasters') {
+    const dest = currentLocation ? 'main' : 'empty';
+    fadeOutThen(['disastersPage'], () => {
+      showState(dest);
+      if (dest === 'main') enterPage('mainContent', 'page-enter-left');
+    });
     return;
   }
   const fadeTargets = ['mainContent', 'shareRow'].map(id => document.getElementById(id)).filter(el => !el.classList.contains('hidden'));
@@ -775,6 +912,142 @@ const UNIVERSAL = [
   'Printed emergency contact list',
   'Battery or hand-crank radio',
   'Portable phone charger',
+];
+
+// ── Natural disaster reference data ───────────────────────────────────────────
+const DISASTERS = [
+  {
+    type:'earthquake', icon:'🌍', color:'#8b7355', name:'Earthquake',
+    tagline:'Sudden violent shaking of the ground',
+    description:'Earthquakes occur when energy stored in Earth\'s crust is suddenly released, sending seismic waves in all directions. They range from barely perceptible tremors to catastrophic events capable of destroying entire cities in seconds.',
+    severity:'Moderate to Extreme', speed:'Seconds of warning (or none)', affected_area:'Localized to regional',
+    causes:['Movement along tectonic plate boundaries','Volcanic activity','Underground explosions or mining','Reservoir-induced seismicity from large dams'],
+    warning_signs:['Minor foreshocks preceding a major event','Unusual animal behavior — restlessness, fleeing','Low rumbling sounds from the ground','Well water level changes (rare indicator)'],
+    during:['DROP to hands and knees immediately','Take COVER under a sturdy desk or against an interior wall away from windows','HOLD ON until shaking stops — it usually lasts under 60 seconds','If outdoors, move away from buildings, power lines, and trees','If driving, pull over away from bridges and overpasses'],
+    after:['Expect aftershocks — they can follow minutes, hours, or days later','Inspect your home for structural damage before re-entering','Turn off gas if you smell a leak or hear hissing','Avoid downed power lines','Use texts instead of calls to preserve network capacity'],
+    facts:['The largest recorded earthquake was magnitude 9.5 in Valdivia, Chile (1960)','About 500,000 detectable earthquakes occur worldwide each year','The 2004 Indian Ocean quake triggered a tsunami that killed ~230,000 people','A magnitude 8.0 releases about 1,000× the energy of a magnitude 6.0','Most earthquakes occur along the Pacific "Ring of Fire"'],
+  },
+  {
+    type:'wildfire', icon:'🔥', color:'#e85d04', name:'Wildfire',
+    tagline:'Uncontrolled fire spreading through vegetation',
+    description:'Wildfires are large, uncontrolled fires burning through forests, grasslands, and shrublands. Driven by wind, dry conditions, and available fuel, they can spread faster than a person can run and jump roads and firebreaks with ease.',
+    severity:'High to Extreme', speed:'Hours to days (wind-dependent)', affected_area:'Local to regional',
+    causes:['Lightning strikes','Human activities: campfires, cigarettes, power lines, arson','Drought and dry conditions increasing available fuel','Climate change extending fire seasons and intensifying droughts'],
+    warning_signs:['Smoke visible from a distance','Strong smell of burning','Red-flag conditions: high heat, low humidity, strong winds','Unusual ember or ash fall downwind','Local emergency evacuation orders'],
+    during:['Evacuate immediately when ordered — never wait to see the fire','Close all windows, doors, and vents to slow smoke entry','Leave lights on so firefighters can see your home in smoke','Drive with headlights on; watch for animals fleeing the fire','Take your go-bag and essential documents'],
+    after:['Do not return until authorities declare it safe','Check roof and attic for hidden embers that could reignite','Wear N95 masks — ash contains toxic particles','Document damage with photos before cleaning up','Be aware of mudslide risk in burned areas when it rains'],
+    facts:['Wildfires can move up to 14 mph in open terrain — faster uphill','About 85% of wildfires are caused by humans','The 1871 Peshtigo Fire (Wisconsin) remains the deadliest U.S. wildfire, killing ~2,500','Climate change has roughly doubled the area burned in the western U.S. since the 1980s','A "firenado" (fire whirl) can generate wind speeds exceeding 100 mph'],
+  },
+  {
+    type:'flood', icon:'💧', color:'#4895ef', name:'Flood',
+    tagline:'Overflow of water onto normally dry land',
+    description:'Floods are the most common and costly natural disaster in the U.S. They occur when water overflows onto land that is normally dry, whether from heavy rainfall, snowmelt, storm surge, or dam failure. Flash floods can develop in minutes with no warning.',
+    severity:'Moderate to Extreme', speed:'Flash (minutes) to slow-onset (days)', affected_area:'Local to regional',
+    causes:['Heavy or prolonged rainfall','Rapid snowmelt or ice-jam breakup','Storm surges from hurricanes or coastal storms','Dam or levee failure','Flash flooding from intense localized rainfall'],
+    warning_signs:['Flood watch or warning issued by the National Weather Service','Rapid rise in stream or river levels','Heavy rain upstream even if it\'s clear locally','Saturated ground unable to absorb more water','Storm surge forecasts for coastal areas'],
+    during:['Move to higher ground immediately — do not wait','Never walk, swim, or drive through floodwaters: 6 inches can knock you down; 12 inches can sweep away a car','If trapped in a building, go to the highest floor','Do not touch electrical equipment if you\'re wet or standing in water'],
+    after:['Return home only when authorities confirm it is safe','Floodwaters are often contaminated with sewage and chemicals — avoid contact','Discard any food that touched floodwater','Check for structural damage before entering a building','Pump out flooded basements gradually to avoid wall collapse from soil pressure'],
+    facts:['Floods kill more people in the U.S. each year than tornadoes or hurricanes','Just 2 feet of moving water can carry away most vehicles including SUVs','Flash floods can strike miles from where rain is actually falling','Flood damage is NOT covered by standard homeowner\'s insurance','The 1931 China floods are the deadliest flood disaster in history, killing up to 4 million people'],
+  },
+  {
+    type:'hurricane', icon:'🌀', color:'#219ebc', name:'Hurricane',
+    tagline:'Tropical storm with sustained winds of 74+ mph',
+    description:'Hurricanes (typhoons or cyclones in other regions) are powerful tropical storms that form over warm ocean water. They bring violent winds, torrential rain, storm surge, and widespread flooding across large areas — often hundreds of miles wide.',
+    severity:'High to Extreme', speed:'Days of advance warning', affected_area:'Regional to large-scale',
+    causes:['Warm ocean water (80°F / 26°C or higher) providing energy and moisture','Low wind shear allowing the storm to organize and intensify','Coriolis effect giving the storm its rotation','Moist tropical air fueling the convective engine'],
+    warning_signs:['NWS hurricane watches and warnings issued days in advance','Rapidly falling barometric pressure','Increasing ocean swell and surf 1–3 days before landfall','Outer rain bands arriving 24–48 hours before the center','Unusual offshore currents or storm surge warnings'],
+    during:['Stay indoors in an interior room away from all windows','Do not go outside during the eye — the storm will resume when the other eyewall arrives','If ordered to evacuate, leave early before roads become dangerous','Stay away from storm surge areas — surge is the #1 hurricane killer','Never use a generator indoors (carbon monoxide can be lethal in minutes)'],
+    after:['Wait for an official all-clear before going outside','Avoid standing water and downed power lines','Be wary of weakened trees and structures — they can fall for days afterward','Use flashlights, not candles, to prevent post-storm fires','Report gas leaks to your utility company immediately'],
+    facts:['Hurricane Katrina (2005) caused $125 billion in damage — one of the costliest U.S. disasters ever','Storm surge, not wind, is the deadliest hurricane hazard','The Saffir-Simpson scale rates hurricanes 1–5 based on wind speed','Typhoon Tip (1979) is the largest tropical cyclone ever at 1,380 miles wide','Atlantic hurricane season officially runs June 1 – November 30, peaking in September'],
+  },
+  {
+    type:'tornado', icon:'🌪️', color:'#74b0d6', name:'Tornado',
+    tagline:'Violently rotating column of air touching the ground',
+    description:'Tornadoes are nature\'s most violent storms, capable of wind speeds exceeding 300 mph. They form from severe thunderstorms and can destroy entire neighborhoods within seconds, leaving a damage path that may be miles long.',
+    severity:'Moderate to Extreme (EF0–EF5)', speed:'Minutes of warning (sometimes none)', affected_area:'Narrow path, local',
+    causes:['Collision of warm moist air with cold dry air creating atmospheric instability','Wind shear — changing wind speed and direction with altitude — providing rotation','Supercell thunderstorms with rotating updrafts (mesocyclones) producing the most violent tornadoes','Most common in "Tornado Alley" (central U.S.) in spring and early summer'],
+    warning_signs:['NWS tornado watch or warning in effect','Dark, greenish-colored sky','Large hail often preceding a tornado','Loud roar like a freight train or jet engine','Visible rotating funnel cloud descending from a storm'],
+    during:['Go to the lowest floor of a sturdy building in an interior room with no windows','Protect your head and neck with your arms or a bicycle helmet','NEVER shelter under a bridge or overpass — wind speeds actually increase there','If caught outdoors, lie flat in a low ditch away from trees and vehicles','Mobile homes are NOT safe — evacuate to a nearby sturdy building'],
+    after:['Watch for downed power lines and gas leaks before moving through debris','Wear sturdy boots — debris fields are filled with nails, glass, and sharp metal','Report injuries or missing persons to local authorities immediately','Photograph damage for your insurance claim','Be alert for weakened building structures that may collapse'],
+    facts:['The U.S. experiences about 1,000 tornadoes per year — more than any other country','The widest tornado on record was the 2013 El Reno, Oklahoma tornado at 2.6 miles wide','The most violent tornadoes (EF5) have wind speeds exceeding 300 mph','The 1925 Tri-State Tornado traveled 219 miles across 3 states and killed 695 people','Tornadoes have been recorded on every continent except Antarctica'],
+  },
+  {
+    type:'volcano', icon:'🌋', color:'#ef233c', name:'Volcanic Eruption',
+    tagline:'Expulsion of lava, ash, and gases from the Earth',
+    description:'Volcanic eruptions occur when magma from deep within the Earth escapes through vents in the crust. Eruptions can produce lava flows, enormous ash clouds, pyroclastic flows, and toxic gases — threatening areas many miles away and even affecting global climate.',
+    severity:'High to Extreme', speed:'Hours to days of warning (usually)', affected_area:'Local to hemispheric (ash / climate effects)',
+    causes:['Subduction zones where one tectonic plate dives beneath another','Hotspots in the mantle (e.g., Hawaii, Yellowstone)','Rift zones where plates are pulling apart','Magma pressure exceeding the strength of the overlying rock'],
+    warning_signs:['Increased earthquake activity (swarms of small quakes beneath the volcano)','Ground deformation — bulging or tilting detected by GPS sensors','Rising sulfur dioxide emissions from vents','Changes in hydrothermal features: new steam vents, hot spring changes','USGS Volcano Observatory alert level rising to Watch or Warning'],
+    during:['Evacuate immediately when ordered — eruptions can escalate rapidly','Wear N95+ respirators — volcanic ash causes severe and permanent lung damage','Wear goggles and cover all exposed skin from falling ash','Avoid valleys and low-lying areas — lahars (volcanic mudflows) travel at up to 60 mph','Close all windows and doors to reduce ash intrusion'],
+    after:['Do not enter evacuation zones until officially declared safe','Clean ash from rooftops — just 4 inches of wet ash weighs as much as concrete','Avoid driving through ash — it destroys engines and clogs air filters','Monitor air quality — volcanic haze (vog) is hazardous to breathe','Be aware of lahar risk for months or even years after an eruption'],
+    facts:['The 1815 eruption of Mount Tambora caused the "Year Without a Summer" in 1816, triggering crop failures worldwide','The 79 AD eruption of Vesuvius buried Pompeii under 13–20 feet of ash and pumice','About 1,500 potentially active volcanoes exist worldwide; ~50 erupt each year','Pyroclastic flows can travel at 450 mph and reach temperatures of 1,800°F','Lava flows on steep slopes have reached speeds of 37 mph'],
+  },
+  {
+    type:'winter_storm', icon:'❄️', color:'#5fb4d0', name:'Winter Storm',
+    tagline:'Severe snow, ice, and freezing conditions',
+    description:'Winter storms bring dangerous combinations of heavy snow, sleet, freezing rain, and extreme cold. They can paralyze entire regions — shutting down transportation, knocking out power for days, and creating life-threatening conditions, especially for elderly and vulnerable populations.',
+    severity:'Moderate to High', speed:'24–48 hours of advance warning', affected_area:'Regional to multi-state',
+    causes:['Cold Arctic or polar air masses colliding with moist air','Nor\'easters along the Atlantic coast','Lake-effect snow when cold air passes over relatively warm Great Lakes','La Niña or El Niño patterns shifting the jet stream position'],
+    warning_signs:['NWS winter storm watch, warning, or advisory in effect','Rapidly falling temperatures combined with increasing clouds','Barometric pressure dropping quickly','Forecast for multiple inches of snow or significant freezing rain accumulation'],
+    during:['Stay indoors — most deaths occur in vehicle accidents on icy roads','Never use a gas stove, grill, or generator indoors (carbon monoxide poisoning risk)','Dress in warm, dry layers if you must go outside: avoid cotton','Recognize hypothermia: shivering stops, confusion, slurred speech → call 911','Check on vulnerable neighbors who may not have adequate heat'],
+    after:['Shovel carefully — cardiac arrest from overexertion is a leading cause of winter storm death','Take breaks and stay hydrated while shoveling','Check pipes that may have frozen and burst while you were away','Clear snow from vehicle exhaust pipes before running any engine','Do not use frostbitten skin for friction warming — rewarm slowly in lukewarm water'],
+    facts:['More Americans die from winter storms each year than from tornadoes','The Great Blizzard of 1888 buried the Northeast U.S. in 40–50 inches of snow','Ice storms can coat power lines with over 500 lbs of ice per 100-foot span','Wind chill of −25°F can cause frostbite in as little as 10 minutes of exposure','The 1993 "Storm of the Century" affected 26 states simultaneously'],
+  },
+  {
+    type:'drought', icon:'🏜️', color:'#e9a84c', name:'Drought',
+    tagline:'Extended period of below-average precipitation',
+    description:'Droughts are prolonged periods of abnormally low rainfall that result in water shortages, crop failures, and stressed ecosystems. Unlike most disasters, they develop slowly — over months or years — but their cascading effects on food, water, and wildfire risk can be devastating.',
+    severity:'Moderate to Extreme (slow-developing)', speed:'Weeks to months to develop', affected_area:'Regional to continental',
+    causes:['Persistent high-pressure systems blocking moisture','Changes in ocean temperature patterns (El Niño / La Niña)','Deforestation reducing moisture recycling by vegetation','Climate change altering precipitation patterns globally','Overuse of groundwater beyond natural recharge rates'],
+    warning_signs:['U.S. Drought Monitor showing drought conditions in your area','Extended periods without significant rainfall','Declining stream flows and reservoir levels','Soil moisture deficits building over consecutive weeks','Local water-use restrictions being implemented'],
+    during:['Conserve water rigorously: fix leaks, use water-efficient fixtures','Follow all local water restrictions and stage-based conservation rules','Reduce lawn irrigation — landscaping accounts for ~30% of household water use','Be acutely aware of elevated wildfire risk — report any fire immediately'],
+    after:['Continue conservation measures — aquifers take years to recover after a drought','Document agricultural losses for disaster assistance programs','Plant drought-resistant native species when revegetating','Invest in water storage, greywater reuse, and rainwater harvesting systems','Support policies for sustainable long-term water management'],
+    facts:['The Dust Bowl drought of the 1930s forced 2.5 million people to flee the Great Plains','The 2012–2016 California drought cost over $3 billion in agricultural losses','About 55 million people are affected by droughts globally each year','A "megadrought" in the American West lasted over 19 years into the 21st century','Agriculture accounts for roughly 70% of all global freshwater consumption'],
+  },
+  {
+    type:'extreme_heat', icon:'🌡️', color:'#e76f51', name:'Extreme Heat',
+    tagline:'Dangerously high temperatures above normal range',
+    description:'Extreme heat events occur when temperatures remain far above historical averages for extended periods, often combined with high humidity. Heat is the leading weather-related cause of death in the U.S., killing more people annually than tornadoes, hurricanes, and floods combined.',
+    severity:'Moderate to Extreme', speed:'Days of advance warning', affected_area:'Regional to continental',
+    causes:['Persistent high-pressure systems trapping hot air near the surface','Urban heat island effect — pavement and buildings absorb and radiate extra heat','High humidity preventing the body\'s sweat-cooling mechanism from working','Climate change increasing the frequency, intensity, and duration of heat waves'],
+    warning_signs:['NWS excessive heat watch, warning, or advisory in effect','Forecast temperatures significantly above historical averages for several days','High overnight temperatures that prevent the body from recovering','Humidity index showing dangerous "feels like" temperatures above 103°F'],
+    during:['Stay in air-conditioned buildings — go to a cooling center if you lack AC at home','Drink water every 15–20 minutes even if you don\'t feel thirsty','Avoid alcohol and caffeine, which accelerate dehydration','NEVER leave children, elderly, or pets in parked vehicles — car interiors can exceed 120°F within minutes','Recognize heat stroke: hot dry skin, confusion, no sweating — call 911 immediately'],
+    after:['Gradually re-acclimate rather than immediately returning to strenuous outdoor activity','Seek medical care for any signs of heat-related illness (cramps, exhaustion, or stroke)','Check on elderly neighbors, infants, and anyone without access to cooling','Report non-functioning cooling centers to local emergency management'],
+    facts:['The 2003 European heat wave killed over 70,000 people','The U.S. record high is 134°F (56.7°C) in Death Valley, California (1913)','A parked car\'s interior can reach 120°F when outside temps are just 70°F','Urban areas can be 7°F hotter than surrounding rural areas due to the heat island effect','Heat kills more Americans annually than any other weather hazard'],
+  },
+  {
+    type:'tsunami', icon:'🌊', color:'#023e8a', name:'Tsunami',
+    tagline:'Series of massive ocean waves triggered by seismic events',
+    description:'Tsunamis are large ocean waves generated by undersea earthquakes, volcanic eruptions, or submarine landslides. Often incorrectly called "tidal waves," they have nothing to do with tides. In the deep ocean they are barely detectable, but they compress and surge to terrifying heights as they approach the shore.',
+    severity:'Extreme', speed:'Minutes (local source) to hours (distant source)', affected_area:'Coastal, can cross entire ocean basins',
+    causes:['Undersea earthquakes at subduction zones (magnitude 7.5 or higher)','Submarine volcanic eruptions displacing large volumes of water','Underwater or coastal landslides','Meteorite ocean impacts (extremely rare)'],
+    warning_signs:['A large earthquake felt near or under the ocean','The sea rapidly and unusually receding (draining) — run to high ground immediately','A loud roar from the direction of the ocean','Tsunami Warning Center official alerts (Pacific and Atlantic systems)','Emergency sirens in coastal areas'],
+    during:['Move immediately to high ground — do not wait for official confirmation if you felt the earthquake','Go as far inland as possible, not just to a slight rise','If you cannot reach high ground, go to the upper floors of a tall reinforced building','The first wave is rarely the largest — multiple waves arrive over several hours','Stay away from the shore until authorities issue an official all-clear'],
+    after:['Do not return to low-lying coastal areas until the all-clear is given','Debris-filled floodwater poses serious drowning, entrapment, and contamination risks','Saltwater flooding contaminates freshwater sources — use emergency water supplies','Aftershocks from the triggering earthquake may generate additional tsunami waves','Help may take many days to arrive — be self-sufficient'],
+    facts:['The 2004 Indian Ocean tsunami killed approximately 230,000 people across 14 countries','Tsunamis can travel across entire ocean basins at speeds up to 500 mph','The highest tsunami wave ever recorded was 1,720 feet in Lituya Bay, Alaska (1958)','In the deep ocean, a tsunami may only raise the sea surface by 1–2 feet','About 80% of all tsunamis occur in the Pacific "Ring of Fire"'],
+  },
+  {
+    type:'landslide', icon:'⛰️', color:'#8b5e3c', name:'Landslide',
+    tagline:'Mass movement of rock, debris, or earth down a slope',
+    description:'Landslides occur when masses of rock, earth, or debris suddenly move down a slope. They can be triggered by earthquakes, heavy rainfall, volcanic activity, or human alteration of slopes. Debris flows (mudslides) are particularly dangerous, traveling at speeds up to 35 mph with little warning.',
+    severity:'Moderate to Extreme', speed:'Seconds to minutes (catastrophic onset)', affected_area:'Local (can cover large areas)',
+    causes:['Heavy or prolonged rainfall saturating and destabilizing slopes','Earthquakes shaking loose unconsolidated material','Volcanic activity melting snow and ice (lahars)','Erosion undercutting slope bases','Construction on or near steep slopes','Deforestation removing root systems that hold soil in place'],
+    warning_signs:['New cracks appearing in the ground, pavement, or building walls','Leaning trees, utility poles, or fences that were previously straight','Doors and windows suddenly sticking in their frames','Water seeping from slopes or unusual ground bulging','Cracking or rumbling sounds, or trees snapping','Rapidly increased stream turbidity (muddiness) after rainfall'],
+    during:['Evacuate immediately if you suspect a landslide is imminent — do not wait to confirm','If escape is impossible, curl into a ball and protect your head','Run perpendicular to the slide path, not directly downslope','Avoid river valleys and low-lying areas during heavy rain following recent wildfires'],
+    after:['Stay well away from the slide area — additional slides are common','Do not enter unstable areas to search for injured persons — wait for rescue crews','Report downed power lines, gas leaks, and broken water mains immediately','Listen for unusual cracking or rumbling sounds indicating continuing movement','Document damage with photos before any cleanup begins'],
+    facts:['Landslides kill about 25–50 people in the U.S. each year','The deadliest landslide on record was the 1920 Haiyuan, China event (~200,000 deaths)','Wildfires dramatically increase landslide risk by removing stabilizing vegetation','Underwater landslides can displace enough water to trigger tsunamis','The 2014 Oso, Washington landslide buried 1 square mile of a neighborhood in 3–5 minutes'],
+  },
+  {
+    type:'thunderstorm', icon:'⛈️', color:'#6a4c93', name:'Thunderstorm',
+    tagline:'Violent storm with lightning, heavy rain, and damaging winds',
+    description:'Thunderstorms are among the most common severe weather events, occurring about 40,000 times per day worldwide. They can produce lightning, damaging wind gusts, large hail, heavy flooding rainfall, and even tornadoes — making them one of the most versatile natural hazards.',
+    severity:'Moderate to Severe', speed:'30–60 minutes of warning', affected_area:'Local to sub-regional',
+    causes:['Warm moist air rapidly rising through cooler air layers (convective instability)','Cold fronts or dry lines forcing air upward','Daytime surface heating generating afternoon convection','Organized storm systems (squall lines, mesoscale convective systems)'],
+    warning_signs:['Towering cumulonimbus clouds developing rapidly','Darkening skies, especially in the west or southwest','Sudden drop in temperature and increase in wind speed','Distant thunder or lightning flashes','NWS severe thunderstorm watch or warning issued'],
+    during:['Get indoors immediately — no place outdoors is safe during lightning','Avoid windows, corded phones, plumbing, and concrete walls (which conduct electricity)','If caught outdoors, avoid tall trees, open fields, water, and high ground','If driving, pull safely off the road away from trees and power lines','Wait 30 minutes after the last thunder clap before resuming outdoor activities'],
+    after:['Check for downed power lines and structural damage before going outdoors','Report flooding to emergency services — even shallow fast water is dangerous','Check on neighbors, especially after hail damage or flooding','Inspect your home for roof damage, broken windows, and water intrusion','Assess trees on your property — struck or waterlogged trees may fall later'],
+    facts:['Lightning strikes the Earth about 100 times every second','The U.S. experiences about 100,000 thunderstorms per year','Large hail (2+ inches) can fall at speeds exceeding 100 mph, causing serious injury','A single bolt of lightning is about 5× hotter than the surface of the sun','About 2,000 people are killed by lightning worldwide each year'],
+  },
 ];
 
 // ── Analysis window picker ────────────────────────────────────────────────────
@@ -1258,6 +1531,7 @@ function addFamily() {
   const input = document.getElementById('familyInput');
   const name = input.value.trim();
   if (!name) return;
+  if (hasProfanity(name)) { showInputWarn('familyInput', 'Please keep the family name clean.'); return; }
   families.push({ id: 'fam_' + Date.now(), name, members: [] });
   saveFamilies();
   input.value = '';
@@ -1713,6 +1987,7 @@ function pickSuggestion(idx) {
 async function handleSearch() {
   const query = document.getElementById('cityInput').value.trim();
   if (!query) return;
+  if (hasProfanity(query)) { showInputWarn('cityInput', 'Please keep your search clean.'); return; }
   closeSuggestions();
   const btn = document.getElementById('searchBtn');
   btn.disabled = true;
@@ -1792,6 +2067,7 @@ function saveReport() {
 window.addEventListener('load', async () => {
   applyTranslations();
   document.getElementById('familyInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFamily(); });
+  document.getElementById('familyInput').addEventListener('input', e => { if (!hasProfanity(e.target.value)) hideInputWarn('familyInput'); });
   document.getElementById('joinCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinFamilyByCode(e.target.value); });
   // Reconnect any families that were already live (restores real-time sync on reload)
   const liveFamilies = families.filter(f => f.isLive && f.code);
@@ -1815,6 +2091,7 @@ window.addEventListener('load', async () => {
   cityInput.addEventListener('input', () => {
     clearTimeout(acDebounce);
     const q = cityInput.value.trim();
+    if (!hasProfanity(q)) hideInputWarn('cityInput');
     if (!q) { closeSuggestions(); return; }
     acDebounce = setTimeout(() => fetchSuggestions(q), 280);
   });
