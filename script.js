@@ -15,20 +15,39 @@ function setBar(el, pct) {
 }
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
-(function () {
-  if (localStorage.getItem('mrr_theme') === 'light') {
-    document.documentElement.classList.add('light');
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('themeToggle').textContent = '🌙 Dark';
-    });
-  }
-})();
+const THEMES = {
+  dark:     { label: 'Dark',     dot: '#f97316' },
+  light:    { label: 'Light',    dot: '#f97316' },
+  ocean:    { label: 'Ocean',    dot: '#38bdf8' },
+  forest:   { label: 'Forest',   dot: '#22c55e' },
+  midnight: { label: 'Midnight', dot: '#a78bfa' },
+  crimson:  { label: 'Crimson',  dot: '#fb7185' },
+};
 
-function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('mrr_theme', isLight ? 'light' : 'dark');
-  document.getElementById('themeToggle').textContent = isLight ? '🌙 Dark' : '☀️ Light';
+function setTheme(name) {
+  Object.keys(THEMES).forEach(t => document.documentElement.classList.remove('theme-' + t));
+  if (name !== 'dark') document.documentElement.classList.add('theme-' + name);
+  localStorage.setItem('mrr_theme', name);
+  const info = THEMES[name] || THEMES.dark;
+  const dot = document.getElementById('themePickDot');
+  const lbl = document.getElementById('themePickLabel');
+  if (dot) dot.style.background = info.dot;
+  if (lbl) lbl.textContent = info.label;
+  document.querySelectorAll('.theme-swatch').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === name);
+  });
+  document.getElementById('themeDrop')?.classList.add('hidden');
 }
+
+function toggleThemePicker() {
+  document.getElementById('themeDrop').classList.toggle('hidden');
+  document.getElementById('langMenu')?.classList.add('hidden');
+}
+
+(function () {
+  const saved = localStorage.getItem('mrr_theme') || 'dark';
+  document.addEventListener('DOMContentLoaded', () => setTheme(saved));
+})();
 
 const RADIUS_KM = 400;
 const YEARS_BACK = 5;   // fetch window — never changes
@@ -384,9 +403,12 @@ function toggleLangMenu() {
 }
 
 document.addEventListener('click', e => {
-  const picker = document.getElementById('langPicker');
-  if (picker && !picker.contains(e.target))
+  const langPicker = document.getElementById('langPicker');
+  if (langPicker && !langPicker.contains(e.target))
     document.getElementById('langMenu').classList.add('hidden');
+  const themePicker = document.getElementById('themePicker');
+  if (themePicker && !themePicker.contains(e.target))
+    document.getElementById('themeDrop')?.classList.add('hidden');
 });
 
 // ── Profanity filter ──────────────────────────────────────────────────────────
