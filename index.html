@@ -45,13 +45,13 @@
     header p { font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; }
     .header-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .header-divider { width: 1px; height: 20px; background: var(--border); margin: 0 2px; flex-shrink: 0; }
-    .theme-toggle { background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; color: var(--text-dim); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
-    .theme-toggle:hover { background: var(--surface2); color: var(--text); }
-    .back-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; color: var(--text); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
-    .back-btn:hover { background: var(--border); }
+    .theme-toggle { background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; color: var(--text-dim); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+    .theme-toggle:hover { background: var(--surface2); color: var(--text); border-color: rgba(249,115,22,0.3); box-shadow: 0 0 10px rgba(249,115,22,0.15); }
+    .back-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; color: var(--text); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+    .back-btn:hover { background: var(--surface2); border-color: rgba(249,115,22,0.3); box-shadow: 0 0 10px rgba(249,115,22,0.15); }
     .nav-page-btns { display: flex; gap: 4px; flex-shrink: 0; }
-    .nav-page-btn { background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 5px 11px; color: var(--text-dim); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
-    .nav-page-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border); }
+    .nav-page-btn { background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 5px 11px; color: var(--text-dim); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
+    .nav-page-btn:hover { background: var(--surface2); color: var(--text); border-color: rgba(249,115,22,0.3); box-shadow: 0 0 10px rgba(249,115,22,0.15); }
     .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
     .weather-stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; text-align: center; }
     .weather-stat-icon { font-size: 1.8rem; margin-bottom: 6px; }
@@ -125,12 +125,12 @@
     .yr-btn:hover { color: var(--text); background: var(--border); }
     .yr-btn.active { background: var(--accent); color: #fff; }
     #yrControl:not([data-loaded]) { opacity: 0.4; pointer-events: none; }
-    .btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: background 0.15s, opacity 0.15s; white-space: nowrap; }
+    .btn { padding: 10px 18px; border-radius: 8px; border: none; cursor: pointer; font-size: 0.875rem; font-weight: 600; transition: background 0.2s, box-shadow 0.2s; white-space: nowrap; }
     .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #ea6b10; }
+    .btn-primary:hover { background: #ea6b10; box-shadow: 0 0 0 3px rgba(249,115,22,0.2), 0 0 16px rgba(249,115,22,0.35); }
     .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--surface2); }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary:hover { background: var(--surface2); box-shadow: 0 0 0 3px rgba(249,115,22,0.1), 0 0 12px rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.3); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none !important; }
 
     #locationPill { max-width: 780px; margin: 12px auto 0; padding: 0 24px; }
     .pill-inner { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px 5px 10px; font-size: 0.78rem; color: var(--text-dim); box-shadow: 0 1px 8px rgba(0,0,0,0.15); }
