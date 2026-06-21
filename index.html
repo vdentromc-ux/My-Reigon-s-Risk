@@ -339,6 +339,16 @@
       .search-section { padding: 28px 16px 0; }
       .main-content { padding: 16px; }
     }
+    @media (max-width: 480px) {
+      header > div:not(.header-right) { display: none; }
+      header .logo { display: none; }
+      .back-btn { padding: 5px 9px; font-size: 0; }
+      #backBtn::before { content: '←'; font-size: 1rem; }
+      #homeBtn::before { content: '🏠'; font-size: 1rem; }
+      .nav-page-btn { padding: 4px 8px; font-size: 0; }
+      .nav-page-btn::before { content: attr(data-emoji); font-size: 1.1rem; }
+      .search-section { padding: 20px 12px 0; }
+    }
     .leaflet-popup-content-wrapper { background: var(--surface2) !important; color: var(--text) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important; }
     .leaflet-popup-tip { background: var(--surface2) !important; }
     .leaflet-popup-content { margin: 10px 14px !important; }
@@ -401,9 +411,9 @@
   </div>
   <div class="header-right">
     <div class="nav-page-btns">
-      <button class="nav-page-btn" id="disastersBtn" data-i18n="disasters_nav_btn" onclick="showDisastersPage()">🌋 Natural Disasters</button>
-      <button class="nav-page-btn hidden" id="weatherBtn" data-i18n="weather_nav_btn" onclick="showWeatherPage()">⛅ Weather</button>
-      <button class="nav-page-btn hidden" id="checklistBtn" data-i18n="checklist_nav_btn" onclick="showChecklistPage()">✅ Preparedness Checklist</button>
+      <button class="nav-page-btn" id="disastersBtn" data-i18n="disasters_nav_btn" data-emoji="🌋" onclick="showDisastersPage()">🌋 Natural Disasters</button>
+      <button class="nav-page-btn hidden" id="weatherBtn" data-i18n="weather_nav_btn" data-emoji="⛅" onclick="showWeatherPage()">⛅ Weather</button>
+      <button class="nav-page-btn hidden" id="checklistBtn" data-i18n="checklist_nav_btn" data-emoji="✅" onclick="showChecklistPage()">✅ Preparedness Checklist</button>
     </div>
     <div class="header-divider"></div>
     <div class="lang-picker" id="langPicker">
