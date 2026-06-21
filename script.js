@@ -149,6 +149,7 @@ const TRANSLATIONS = {
     lp_bottom_sub:'Just enter your city. Takes under 10 seconds.',
     lp_bottom_cta:'Check My Region →',
     scroll_hint:'Scroll for more',
+    home_btn:'🏠 Home',
   },
   es: {
     lang_name:'ES', header_subtitle:'Concienciación sobre desastres y lista de preparación en tiempo real',
@@ -231,6 +232,7 @@ const TRANSLATIONS = {
     lp_bottom_sub:'Solo ingresa tu ciudad. Tarda menos de 10 segundos.',
     lp_bottom_cta:'Ver Mi Región →',
     scroll_hint:'Desplázate para ver más',
+    home_btn:'🏠 Inicio',
   },
   fr: {
     lang_name:'FR', header_subtitle:'Sensibilisation aux catastrophes et liste de préparation en temps réel',
@@ -313,6 +315,7 @@ const TRANSLATIONS = {
     lp_bottom_sub:'Entrez simplement votre ville. Moins de 10 secondes.',
     lp_bottom_cta:'Vérifier Ma Région →',
     scroll_hint:'Défiler pour voir plus',
+    home_btn:'🏠 Accueil',
   },
   de: {
     lang_name:'DE', header_subtitle:'Echtzeit-Katastrophenbewusstsein & Vorbereitungscheckliste',
@@ -395,6 +398,7 @@ const TRANSLATIONS = {
     lp_bottom_sub:'Geben Sie einfach Ihre Stadt ein. Dauert unter 10 Sekunden.',
     lp_bottom_cta:'Meine Region prüfen →',
     scroll_hint:'Weiter scrollen',
+    home_btn:'🏠 Startseite',
   },
   zh: {
     lang_name:'中文', header_subtitle:'实时灾害意识与备灾清单',
@@ -477,6 +481,7 @@ const TRANSLATIONS = {
     lp_bottom_sub:'只需输入您的城市，不到10秒即可完成。',
     lp_bottom_cta:'查看我的地区 →',
     scroll_hint:'向下滚动查看更多',
+    home_btn:'🏠 主页',
   },
 };
 
@@ -567,6 +572,7 @@ function showState(which) {
   });
   const searchSection = document.getElementById('searchSection');
   const backBtn = document.getElementById('backBtn');
+  const homeBtn = document.getElementById('homeBtn');
   const checklistBtn = document.getElementById('checklistBtn');
   const weatherBtn  = document.getElementById('weatherBtn');
   const disastersBtn = document.getElementById('disastersBtn');
@@ -574,11 +580,13 @@ function showState(which) {
     document.getElementById('landingPage').classList.remove('hidden');
     if (searchSection) searchSection.classList.add('hidden');
     backBtn.classList.add('hidden');
+    homeBtn?.classList.add('hidden');
     checklistBtn.classList.add('hidden');
     weatherBtn.classList.add('hidden');
     disastersBtn?.classList.add('hidden');
     return;
   }
+  homeBtn?.classList.remove('hidden');
   if (searchSection) searchSection.classList.remove('hidden');
   if (which === 'main') {
     document.getElementById('mainContent').classList.remove('hidden');
@@ -616,6 +624,16 @@ function showState(which) {
     weatherBtn.classList.add('hidden');
     disastersBtn?.classList.remove('hidden');
   }
+}
+
+function backToLanding() {
+  const toFade = ['mainContent','shareRow','checklistPage','weatherPage','disastersPage','searchSection','emptyState','loadingState','locationPill'];
+  fadeOutThen(toFade, () => {
+    showState('landing');
+    const hint = document.getElementById('scrollHint');
+    if (hint) hint.classList.remove('faded');
+    enterPage('landingPage', 'page-enter-left');
+  });
 }
 
 function fadeOutThen(ids, callback) {

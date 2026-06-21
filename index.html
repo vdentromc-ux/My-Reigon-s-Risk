@@ -75,6 +75,7 @@
     .nav-page-btns { display: flex; gap: 4px; flex-shrink: 0; }
     .nav-page-btn { background: transparent; border: 1px solid transparent; border-radius: 7px; padding: 5px 11px; color: var(--text-dim); font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; flex-shrink: 0; }
     .nav-page-btn:hover { background: var(--surface2); color: var(--text); border-color: rgba(var(--accent-rgb),0.3); box-shadow: 0 0 10px rgba(var(--accent-rgb),0.15); }
+    #disastersBtn { border-color: var(--border); color: var(--text); }
     .theme-picker { position: relative; flex-shrink: 0; }
     .theme-pick-btn { display: flex; align-items: center; gap: 7px; background: transparent; border: 1px solid var(--border); border-radius: 7px; padding: 5px 10px; cursor: pointer; font-size: 0.78rem; font-weight: 600; color: var(--text-dim); transition: all 0.15s; white-space: nowrap; }
     .theme-pick-btn:hover { background: var(--surface2); color: var(--text); border-color: rgba(var(--accent-rgb),0.3); }
@@ -377,7 +378,7 @@
   .lp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   @media (max-width: 800px) { .lp-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 500px) { .lp-grid { grid-template-columns: 1fr; } }
-  .lp-panel { background: var(--surface); border: 1px solid var(--border); border-top: 2px solid rgba(var(--accent-rgb),0.15); border-radius: var(--radius); padding: 24px 22px; transition: border-color 0.2s, border-top-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+  .lp-panel { background: var(--surface); border: 1px solid var(--border); border-top: 2px solid rgba(var(--accent-rgb),0.15); border-radius: var(--radius); padding: 24px 22px; transition: border-color 0.2s, border-top-color 0.2s, box-shadow 0.2s, transform 0.2s; cursor: pointer; }
   .lp-panel:hover { border-color: rgba(var(--accent-rgb),0.25); border-top-color: rgba(var(--accent-rgb),0.6); box-shadow: 0 8px 28px rgba(0,0,0,0.3), 0 0 0 3px rgba(var(--accent-rgb),0.06); transform: translateY(-3px); }
   .lp-panel-icon { font-size: 1.75rem; margin-bottom: 14px; line-height: 1; display: block; }
   .lp-panel-title { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.01em; }
@@ -392,6 +393,7 @@
 
 <header>
   <button class="back-btn hidden" id="backBtn" onclick="backToMenu()">← Back to Menu</button>
+  <button class="back-btn hidden" id="homeBtn" data-i18n="home_btn" onclick="backToLanding()">🏠 Home</button>
   <span class="logo">🗺️</span>
   <div>
     <h1>My Region's <span class="brand-accent">Risk</span></h1>
@@ -468,32 +470,32 @@
         <p class="lp-section-sub" data-i18n="lp_section_sub">Most apps show national headlines. We analyze what's happening within 400&nbsp;km of your exact address.</p>
       </div>
       <div class="lp-grid">
-        <div class="lp-panel">
+        <div class="lp-panel" onclick="enterApp()">
           <span class="lp-panel-icon">📡</span>
           <h3 class="lp-panel-title" data-i18n="lp_panel1_title">Live Disaster Data</h3>
           <p class="lp-panel-desc" data-i18n="lp_panel1_desc">Pulls earthquake data from USGS, natural events from NASA EONET, and active weather alerts from NWS in real time — every time you search.</p>
         </div>
-        <div class="lp-panel">
+        <div class="lp-panel" onclick="enterApp()">
           <span class="lp-panel-icon">📍</span>
           <h3 class="lp-panel-title" data-i18n="lp_panel2_title">Hyper-Local Risk Analysis</h3>
           <p class="lp-panel-desc" data-i18n="lp_panel2_desc">Events in a 400&nbsp;km radius around your exact coordinates are ranked by frequency and weighted severity — not national averages.</p>
         </div>
-        <div class="lp-panel">
+        <div class="lp-panel" onclick="enterApp()">
           <span class="lp-panel-icon">✅</span>
           <h3 class="lp-panel-title" data-i18n="lp_panel3_title">Personalized Checklists</h3>
           <p class="lp-panel-desc" data-i18n="lp_panel3_desc">Your preparedness checklist is built from your regional risk profile. Earthquake zone? You get earthquake items. Wildfire area? Same idea.</p>
         </div>
-        <div class="lp-panel">
+        <div class="lp-panel" onclick="showDisastersPage()">
           <span class="lp-panel-icon">🌋</span>
           <h3 class="lp-panel-title" data-i18n="lp_panel4_title">Disaster Education</h3>
           <p class="lp-panel-desc" data-i18n="lp_panel4_desc">Detailed guides for 12 types of natural disasters — causes, warning signs, what to do during, and what to do after — backed by official sources.</p>
         </div>
-        <div class="lp-panel">
+        <div class="lp-panel" onclick="enterApp()">
           <span class="lp-panel-icon">⛅</span>
           <h3 class="lp-panel-title" data-i18n="lp_panel5_title">Weather &amp; Active Alerts</h3>
           <p class="lp-panel-desc" data-i18n="lp_panel5_desc">Current conditions and live NWS emergency alerts for your area, plus an interactive map to visualize historical disaster events over time.</p>
         </div>
-        <div class="lp-panel">
+        <div class="lp-panel" onclick="enterApp()">
           <span class="lp-panel-icon">👨‍👩‍👧</span>
           <h3 class="lp-panel-title" data-i18n="lp_panel6_title">Household Tracker</h3>
           <p class="lp-panel-desc" data-i18n="lp_panel6_desc">Create family groups, track each member's preparedness progress, and sync in real time across devices — no sign-up required.</p>
