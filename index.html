@@ -6,7 +6,7 @@
   <title>My Region's Risk</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     :root {
@@ -370,7 +370,7 @@
   .lp-logo { font-size: 3.6rem; margin-bottom: 22px; line-height: 1; filter: drop-shadow(0 0 28px rgba(var(--accent-rgb),0.35)); animation: lp-logo-float 3.5s ease-in-out infinite; }
   @keyframes lp-logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
   .lp-title { font-size: clamp(2.1rem, 5.5vw, 3.2rem); font-weight: 800; color: var(--text); letter-spacing: -0.045em; line-height: 1.08; margin-bottom: 16px; }
-  .lp-slogan { font-size: clamp(1.05rem, 2.5vw, 1.3rem); font-weight: 600; color: var(--text); margin-bottom: 14px; letter-spacing: -0.01em; }
+  .lp-slogan { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-size: clamp(1.15rem, 2.8vw, 1.5rem); font-weight: 400; color: #facc15; margin-bottom: 14px; letter-spacing: 0.01em; }
   .lp-sub { font-size: 0.96rem; color: var(--text-dim); line-height: 1.72; margin: 0 auto 34px; max-width: 470px; }
   .lp-cta { padding: 14px 32px; font-size: 0.96rem; font-weight: 700; border-radius: 9px; animation: lp-cta-pulse 2.6s ease-in-out infinite; }
   .lp-cta:hover { animation: none; }
@@ -449,7 +449,7 @@
     <div class="lp-hero-inner">
       <div class="lp-logo">🗺️</div>
       <h1 class="lp-title">My Region's <span class="brand-accent">Risk</span></h1>
-      <p class="lp-slogan" data-i18n="lp_slogan">Know your risk. Stay prepared.</p>
+      <p class="lp-slogan" data-i18n="lp_slogan">Your region. Your risks. Your plan.</p>
       <p class="lp-sub" data-i18n="lp_sub">Real-time disaster data, personalized risk analysis, and preparedness tools — built around your exact location, for free.</p>
       <button class="btn btn-primary lp-cta" data-i18n="lp_cta_start" onclick="enterApp()">Get Started →</button>
       <p class="lp-no-bs" data-i18n="lp_no_bs">No account required · Free forever · Works offline</p>
