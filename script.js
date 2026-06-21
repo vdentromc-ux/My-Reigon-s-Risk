@@ -148,6 +148,7 @@ const TRANSLATIONS = {
     lp_bottom_title:"Ready to see what's happening in your region?",
     lp_bottom_sub:'Just enter your city. Takes under 10 seconds.',
     lp_bottom_cta:'Check My Region →',
+    scroll_hint:'Scroll for more',
   },
   es: {
     lang_name:'ES', header_subtitle:'Concienciación sobre desastres y lista de preparación en tiempo real',
@@ -229,6 +230,7 @@ const TRANSLATIONS = {
     lp_bottom_title:'¿Listo para ver qué ocurre en tu región?',
     lp_bottom_sub:'Solo ingresa tu ciudad. Tarda menos de 10 segundos.',
     lp_bottom_cta:'Ver Mi Región →',
+    scroll_hint:'Desplázate para ver más',
   },
   fr: {
     lang_name:'FR', header_subtitle:'Sensibilisation aux catastrophes et liste de préparation en temps réel',
@@ -310,6 +312,7 @@ const TRANSLATIONS = {
     lp_bottom_title:'Prêt à voir ce qui se passe dans votre région ?',
     lp_bottom_sub:'Entrez simplement votre ville. Moins de 10 secondes.',
     lp_bottom_cta:'Vérifier Ma Région →',
+    scroll_hint:'Défiler pour voir plus',
   },
   de: {
     lang_name:'DE', header_subtitle:'Echtzeit-Katastrophenbewusstsein & Vorbereitungscheckliste',
@@ -391,6 +394,7 @@ const TRANSLATIONS = {
     lp_bottom_title:'Bereit zu sehen, was in Ihrer Region passiert?',
     lp_bottom_sub:'Geben Sie einfach Ihre Stadt ein. Dauert unter 10 Sekunden.',
     lp_bottom_cta:'Meine Region prüfen →',
+    scroll_hint:'Weiter scrollen',
   },
   zh: {
     lang_name:'中文', header_subtitle:'实时灾害意识与备灾清单',
@@ -472,6 +476,7 @@ const TRANSLATIONS = {
     lp_bottom_title:'准备好查看您所在地区的情况了吗？',
     lp_bottom_sub:'只需输入您的城市，不到10秒即可完成。',
     lp_bottom_cta:'查看我的地区 →',
+    scroll_hint:'向下滚动查看更多',
   },
 };
 
@@ -2227,6 +2232,13 @@ function saveReport() {
 // ── Init ───────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
   applyTranslations();
+  (function () {
+    const hint = document.getElementById('scrollHint');
+    if (!hint) return;
+    window.addEventListener('scroll', () => {
+      hint.classList.toggle('hidden', window.scrollY > 60);
+    }, { passive: true });
+  })();
   document.getElementById('familyInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFamily(); });
   document.getElementById('familyInput').addEventListener('input', e => { if (!hasProfanity(e.target.value)) hideInputWarn('familyInput'); });
   document.getElementById('joinCodeInput').addEventListener('keydown', e => { if (e.key === 'Enter') joinFamilyByCode(e.target.value); });

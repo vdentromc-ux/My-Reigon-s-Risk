@@ -345,7 +345,16 @@
     .popup-detail { font-size: 0.76rem; color: var(--text-dim); line-height: 1.5; }
   /* ── Landing page ──────────────────────────────────────────────────────────── */
   #landingPage { background: var(--bg); }
-  .lp-hero { padding: 92px 28px 76px; text-align: center; border-bottom: 1px solid var(--border); background: radial-gradient(ellipse at 50% -10%, rgba(var(--accent-rgb),0.12) 0%, transparent 62%); }
+  .lp-hero { position: relative; padding: 92px 28px 100px; text-align: center; border-bottom: 1px solid var(--border); background: radial-gradient(ellipse at 50% -10%, rgba(var(--accent-rgb),0.12) 0%, transparent 62%); }
+  .lp-scroll-hint { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 7px; opacity: 0.5; transition: opacity 0.5s ease; pointer-events: none; }
+  .lp-scroll-hint.hidden { opacity: 0; }
+  .lp-scroll-hint-text { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+  .lp-scroll-chevrons { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .lp-scroll-chevron { width: 11px; height: 11px; border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim); transform: rotate(45deg); animation: scroll-hint-wave 1.5s ease-in-out infinite; }
+  .lp-scroll-chevron:nth-child(2) { margin-top: -3px; animation-delay: 0.2s; }
+  .lp-scroll-chevron:nth-child(3) { margin-top: -3px; animation-delay: 0.4s; }
+  @keyframes scroll-hint-wave { 0%, 55%, 100% { opacity: 0.15; } 25% { opacity: 1; } }
+  @media (max-width: 500px) { .lp-hero { padding: 60px 20px 84px; } }
   .lp-hero-inner { max-width: 640px; margin: 0 auto; }
   .lp-logo { font-size: 3.6rem; margin-bottom: 22px; line-height: 1; filter: drop-shadow(0 0 28px rgba(var(--accent-rgb),0.35)); animation: lp-logo-float 3.5s ease-in-out infinite; }
   @keyframes lp-logo-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
@@ -367,7 +376,7 @@
   .lp-section-sub { font-size: 0.9rem; color: var(--text-dim); line-height: 1.68; max-width: 480px; margin: 0 auto; }
   .lp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   @media (max-width: 800px) { .lp-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 500px) { .lp-grid { grid-template-columns: 1fr; } .lp-hero { padding: 60px 20px 52px; } }
+  @media (max-width: 500px) { .lp-grid { grid-template-columns: 1fr; } }
   .lp-panel { background: var(--surface); border: 1px solid var(--border); border-top: 2px solid rgba(var(--accent-rgb),0.15); border-radius: var(--radius); padding: 24px 22px; transition: border-color 0.2s, border-top-color 0.2s, box-shadow 0.2s, transform 0.2s; }
   .lp-panel:hover { border-color: rgba(var(--accent-rgb),0.25); border-top-color: rgba(var(--accent-rgb),0.6); box-shadow: 0 8px 28px rgba(0,0,0,0.3), 0 0 0 3px rgba(var(--accent-rgb),0.06); transform: translateY(-3px); }
   .lp-panel-icon { font-size: 1.75rem; margin-bottom: 14px; line-height: 1; display: block; }
@@ -438,6 +447,14 @@
         <span class="lp-source-badge">NASA EONET</span>
         <span class="lp-source-badge">NWS</span>
         <span class="lp-source-badge">Open-Meteo</span>
+      </div>
+    </div>
+    <div class="lp-scroll-hint" id="scrollHint">
+      <span class="lp-scroll-hint-text" data-i18n="scroll_hint">Scroll for more</span>
+      <div class="lp-scroll-chevrons">
+        <div class="lp-scroll-chevron"></div>
+        <div class="lp-scroll-chevron"></div>
+        <div class="lp-scroll-chevron"></div>
       </div>
     </div>
   </section>
