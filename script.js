@@ -2236,7 +2236,7 @@ window.addEventListener('load', async () => {
     const hint = document.getElementById('scrollHint');
     if (!hint) return;
     window.addEventListener('scroll', () => {
-      hint.classList.toggle('hidden', window.scrollY > 60);
+      hint.classList.toggle('faded', window.scrollY > 60);
     }, { passive: true });
   })();
   document.getElementById('familyInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFamily(); });
